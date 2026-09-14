@@ -9,6 +9,7 @@ import { Disque } from "@/components/ui/Pastille";
 import { EtatVide } from "@/components/ui/Etats";
 import { BoutonLien } from "@/components/ui/Bouton";
 import { LIBELLE_RECORD } from "@/lib/types";
+import { MARQUE } from "@/lib/brand";
 import { semainesCompletes, serieEnCours } from "@/lib/calculs";
 import { charge, dureeLisible, entier, jourAbrege, nombre, tonnageLisible, typo } from "@/lib/format";
 
@@ -76,15 +77,36 @@ export default async function TableauDeBord() {
   })();
 
   return (
-    <main id="contenu" className="mx-auto flex w-full max-w-2xl flex-col gap-9 px-5 pt-securite pb-8">
-      <header className="flex items-start justify-between gap-4 pt-4">
+    <main id="contenu" className="mx-auto flex w-full max-w-2xl flex-col gap-7 px-5 pt-securite pb-8">
+      {/* Barre de tête : la marque à gauche, l'accès au profil à droite.
+          Le rail de navigation ne porte que les quatre écrans du quotidien ;
+          programmes, classement et réglages passent par ici. */}
+      <div className="flex items-center justify-between gap-4 pt-4">
+        <p className="font-affichage text-bloc font-bold tracking-tight">{MARQUE.nom}</p>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/programmes"
+            className="min-h-11 rounded-pastille px-3 py-2 text-mention font-medium text-accent-fort hover:bg-accent-voile"
+          >
+            Programmes
+          </Link>
+          <Link
+            href="/profil"
+            className="min-h-11 rounded-pastille px-3 py-2 text-mention font-medium text-accent-fort hover:bg-accent-voile"
+          >
+            Profil
+          </Link>
+        </div>
+      </div>
+
+      <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-affichage text-titre font-bold">Salut {profil?.prenom ?? ""}.</h1>
           <p className="mt-1 text-ui text-texte-doux">{typo(phrase)}</p>
         </div>
         {serie > 0 && (
           <Link
-            href="/progression"
+            href="/classement"
             aria-label={`Série de ${serie} semaines consécutives où l'objectif est tenu`}
             className="flex shrink-0 items-center gap-2 rounded-pastille border border-trait bg-surface px-3 py-2"
           >

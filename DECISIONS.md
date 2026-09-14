@@ -4,6 +4,8 @@ Un arbitrage, une ligne, une date. Le plus récent en haut.
 
 ## 2026-09-14 — Lot 12 : accessibilité, performance, tests, déploiement
 
+- **2026-09-14** — **Trou de navigation trouvé en relisant les liens** : `/profil` n'était atteignable depuis aucun écran — donc ni les réglages, ni l'export, ni la suppression de compte, ni l'espace admin. Le rail ne porte que les quatre écrans du quotidien ; une barre de tête sur le tableau de bord ouvre désormais **Programmes** et **Profil**. La pastille de série renvoie au classement plutôt qu'à la progression, qui est déjà dans le rail.
+
 - **2026-09-14** — **Violation de contraste trouvée par axe, pas par relecture** : `--color-texte-tenu` était à `rgb(10 22 40 / .42)`, soit **2,72:1** sur blanc — décoratif — alors qu'il portait les étiquettes KG, REPS et toutes les mentions. Hiérarchie de gris refaite à trois niveaux conformes AA **sur blanc et sur `--color-surface`** : 18:1 / 9:1 / 4,9:1.
 - **2026-09-14** — La silhouette de la carte corporelle portait `role="img"` tout en contenant des cibles focusables : `nested-interactive`. Passée en `role="group"`.
 - **2026-09-14** — **Le héros 3D de l'accueil est remplacé par un SVG animé en CSS.** React Three Fiber coûtait ~700 ms de blocage du fil principal sur la seule page qui doit être rapide : score de performance mobile **81**. En SVG, même image et même chorégraphie (chargement orchestré en 2 s, puis suivi du curseur et de l'inclinaison), pour **97**. Le §8 du brief pose le plancher de performance comme non négociable ; il l'emporte sur le troisième emploi de la 3D. Les deux autres moments 3D — le disque du record, le mur des records — sont derrière l'authentification et restent en 3D.

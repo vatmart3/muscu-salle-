@@ -19,7 +19,7 @@ export function Pastille({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-pastille border px-2.5 py-1 text-mention font-medium",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-pastille border px-2.5 py-1 text-mention font-medium whitespace-nowrap",
         tons[ton],
         className,
       )}

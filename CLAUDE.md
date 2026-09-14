@@ -63,6 +63,10 @@ scripts/               Outils de développement
   `lib/supabase/admin.ts` depuis un fichier portant `"use client"`.
 - Toute validation de formulaire est écrite une fois dans `lib/schemas.ts` avec
   Zod, et utilisée **des deux côtés** (client et Server Action).
+- Toute copy française passe par `typo()` de `lib/format.ts` (espace fine
+  insécable avant `? ! ; : »`). Quand le texte est mêlé à du JSX, écrire
+  l'espace en échappement visible : `{"Volume\u202f:"}`.
+- Toute migration qui touche une colonne se reporte dans `lib/types-db.ts`.
 - Les calculs du domaine (1RM, tonnage, records, moyennes) vivent dans
   `lib/calculs.ts`. Aucun composant ne recalcule à la main.
 

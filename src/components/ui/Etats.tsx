@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { typo } from "@/lib/format";
 import { Surface } from "./Surface";
 
 /** Squelette de chargement. Jamais de spinner centré. */
@@ -30,8 +31,8 @@ export function EtatVide({
 }) {
   return (
     <Surface className={cn("flex flex-col items-start gap-3 p-6", className)}>
-      <h3 className="font-affichage text-bloc font-bold">{titre}</h3>
-      <p className="max-w-prose text-ui text-texte-doux">{texte}</p>
+      <h3 className="font-affichage text-bloc font-bold">{typo(titre)}</h3>
+      <p className="max-w-prose text-ui text-texte-doux">{typo(texte)}</p>
       {action}
     </Surface>
   );
@@ -55,8 +56,8 @@ export function EtatErreur({
   return (
     <Surface ton="encre" className={cn("flex flex-col items-start gap-3 p-5", className)} rayon="petit">
       <div role="alert" className="flex flex-col gap-1.5">
-        <h3 className="font-affichage text-bloc font-bold">{titre}</h3>
-        <p className="max-w-prose text-ui text-inverse-doux">{texte}</p>
+        <h3 className="font-affichage text-bloc font-bold">{typo(titre)}</h3>
+        <p className="max-w-prose text-ui text-inverse-doux">{typo(texte)}</p>
       </div>
       {action}
     </Surface>

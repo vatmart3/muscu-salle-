@@ -107,3 +107,23 @@ export function libelleSemaine(debut: string | Date): string {
 export function rang(n: number): string {
   return n === 1 ? "1re" : `${n}e`;
 }
+
+const AVANT_PONCTUATION = /\s+([?!;:»])/g;
+const APRES_GUILLEMET = /«\s+/g;
+const AVANT_POURCENT = /\s+%/g;
+
+/**
+ * Typographie française : espace fine insécable avant ? ! ; : et », espace
+ * insécable avant %. Sans ça, un point d'interrogation se retrouve seul sur
+ * une ligne dès qu'un titre passe à la ligne — ce qui arrive tout le temps
+ * sur un écran de 390 px.
+ *
+ * À appliquer sur toute copy française rendue dans une primitive. Quand le
+ * texte est mélangé à du JSX, écrire l'espace fine en échappement : " ".
+ */
+export function typo(texte: string): string {
+  return texte
+    .replace(AVANT_PONCTUATION, " $1")
+    .replace(APRES_GUILLEMET, "« ")
+    .replace(AVANT_POURCENT, " %");
+}

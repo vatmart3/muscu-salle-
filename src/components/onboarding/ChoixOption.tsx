@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { typo } from "@/lib/format";
 
 /**
  * Option d'onboarding. Pas de case à cocher, pas de menu déroulant : une cible
@@ -38,8 +39,8 @@ export function ChoixOption({
     >
       {glyphe && <span className="shrink-0">{glyphe}</span>}
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className={cn("font-affichage font-bold", compact ? "text-ui" : "text-bloc")}>{titre}</span>
-        {detail && <span className="text-mention text-texte-doux">{detail}</span>}
+        <span className={cn("font-affichage font-bold", compact ? "text-ui" : "text-bloc")}>{typo(titre)}</span>
+        {detail && <span className="text-mention text-texte-doux">{typo(detail)}</span>}
       </span>
       <span
         aria-hidden="true"

@@ -2,6 +2,16 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 4 : onboarding
+
+- **2026-09-14** — **Enregistrement optimiste** : on avance à l'écran suivant tout de suite et on sauvegarde derrière. Un creux de réseau ne doit pas bloquer l'onboarding ; les réponses qui n'ont pas pu partir entrent dans une file de rejeu renvoyée avec l'étape finale. La version bloquante a été écrite d'abord, puis jetée après essai — elle rendait l'app inutilisable dès que Supabase ne répondait pas.
+- **2026-09-14** — La molette (taille, poids, date) est un vrai `spinbutton` focusable, piloté aux flèches, Page précédente/suivante, Début et Fin. Le défilement au doigt et le clavier écrivent dans le même état : un sélecteur à molette non accessible aurait coûté les 100 d'accessibilité.
+- **2026-09-14** — Les quatre cartes d'objectif sont illustrées **à l'anneau** (plein, fin, dense, pointillé, concentrique) et non par des photos ou des icônes empruntées : c'est le seul vocabulaire graphique autorisé.
+- **2026-09-14** — Le poids saisi à l'onboarding n'est pas une colonne de profil mais la **première ligne de `mesures`** : c'est une donnée qui bouge, elle appartient à la courbe.
+- **2026-09-14** — Le programme initial n'est pas un modèle figé : chaque emplacement d'une séance liste des **candidats par ordre de préférence** et on retient le premier exercice que le matériel déclaré permet. Sans ça, un membre sans rack se retrouvait avec un programme de squat barre.
+- **2026-09-14** — Un format qui demande plus de jours que déclaré est **pénalisé mais pas masqué** : il reste visible comme objectif à atteindre.
+- **2026-09-14** — Ajout de `typo()` : espace fine insécable avant `? ! ; : »`, insécable avant `%`. Sans ça, un point d'interrogation se retrouve seul sur une ligne dès qu'un titre passe à la ligne — ce qui arrive systématiquement à 390 px. Appliqué dans les primitives qui rendent de la copy française.
+
 ## 2026-09-14 — Lot 3 : authentification
 
 - **2026-09-14** — Les liens d'e-mail visent `/auth/confirmer?token_hash=…` (vérification OTP côté serveur) plutôt que `{{ .ConfirmationURL }}` : la session est posée par notre propre route, dans nos cookies, sans rebond par le domaine Supabase.

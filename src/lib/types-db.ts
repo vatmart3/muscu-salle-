@@ -176,15 +176,24 @@ export type LigneClassement = {
 };
 
 /**
- * `Relationships` est exigé par postgrest-js pour reconnaître un schéma typé.
- * On ne décrit pas les jointures implicites : les requêtes imbriquées de ce
- * projet passent toutes par des noms de contrainte explicites.
+ * `Relationships` décrit les clés étrangères. postgrest-js s'en sert pour
+ * typer les sélections imbriquées (`seances(…, seance_exercices(…))`) : sans
+ * elles, chaque requête imbriquée remonte en `SelectQueryError`.
+ * Les noms sont ceux que Postgres génère : `<table>_<colonne>_fkey`.
  */
-type Table<L, I, U = Partial<L>> = {
+type Lien<Nom extends string, Colonne extends string, Cible extends string> = {
+  foreignKeyName: Nom;
+  columns: [Colonne];
+  isOneToOne: false;
+  referencedRelation: Cible;
+  referencedColumns: ["id"];
+};
+
+type Table<L, I, R extends readonly unknown[] = [], U = Partial<L>> = {
   Row: L;
   Insert: I;
   Update: U;
-  Relationships: [];
+  Relationships: R;
 };
 
 /**
@@ -227,18 +236,41 @@ export type Database = {
     Tables: {
       /** Créé par déclencheur à l'inscription : jamais inséré depuis le client. */
       profiles: Table<Profil, Pick<Profil, "id" | "prenom">>;
-      exercices: Table<Exercice, InsertExercice>;
-      seances_modeles: Table<SeanceModele, InsertModele>;
-      modele_exercices: Table<ModeleExercice, InsertModeleExercice>;
-      seances: Table<Seance, InsertSeance>;
-      seance_exercices: Table<SeanceExercice, InsertSeanceExercice>;
-      series: Table<Serie, InsertSerie>;
-      mesures: Table<Mesure, InsertMesure>;
-      photos_progres: Table<PhotoProgres, InsertPhoto>;
+      exercices: Table<Exercice, InsertExercice, [Lien<"exercices_owner_id_fkey", "owner_id", "profiles">]>;
+      seances_modeles: Table<SeanceModele, InsertModele, [Lien<"seances_modeles_owner_id_fkey", "owner_id", "profiles">]>;
+      modele_exercices: Table<
+        ModeleExercice,
+        InsertModeleExercice,
+        [
+          Lien<"modele_exercices_modele_id_fkey", "modele_id", "seances_modeles">,
+          Lien<"modele_exercices_exercice_id_fkey", "exercice_id", "exercices">,
+        ]
+      >;
+      seances: Table<
+        Seance,
+        InsertSeance,
+        [Lien<"seances_user_id_fkey", "user_id", "profiles">, Lien<"seances_modele_id_fkey", "modele_id", "seances_modeles">]
+      >;
+      seance_exercices: Table<
+        SeanceExercice,
+        InsertSeanceExercice,
+        [
+          Lien<"seance_exercices_seance_id_fkey", "seance_id", "seances">,
+          Lien<"seance_exercices_exercice_id_fkey", "exercice_id", "exercices">,
+        ]
+      >;
+      series: Table<Serie, InsertSerie, [Lien<"series_seance_exercice_id_fkey", "seance_exercice_id", "seance_exercices">]>;
+      mesures: Table<Mesure, InsertMesure, [Lien<"mesures_user_id_fkey", "user_id", "profiles">]>;
+      photos_progres: Table<PhotoProgres, InsertPhoto, [Lien<"photos_progres_user_id_fkey", "user_id", "profiles">]>;
       /** Écrits uniquement par déclencheur : rien à insérer ni à modifier depuis le client. */
-      records: Table<RecordPerso, Record<string, never>, Record<string, never>>;
-      codes_acces: Table<CodeAcces, InsertCode>;
-      abonnements_push: Table<AbonnementPush, InsertAbonnement>;
+      records: Table<
+        RecordPerso,
+        Record<string, never>,
+        [Lien<"records_user_id_fkey", "user_id", "profiles">, Lien<"records_exercice_id_fkey", "exercice_id", "exercices">],
+        Record<string, never>
+      >;
+      codes_acces: Table<CodeAcces, InsertCode, [Lien<"codes_acces_cree_par_fkey", "cree_par", "profiles">]>;
+      abonnements_push: Table<AbonnementPush, InsertAbonnement, [Lien<"abonnements_push_user_id_fkey", "user_id", "profiles">]>;
     };
     Views: {
       classement: { Row: LigneClassement; Relationships: [] };
@@ -269,6 +301,17 @@ export type Database = {
       };
       generer_code_partage: { Args: Record<string, never>; Returns: string };
       est_admin: { Args: Record<string, never>; Returns: boolean };
+      abandonner_seance: { Args: { p_seance_id: string }; Returns: undefined };
+      contexte_exercices: {
+        Args: { p_ids: string[] };
+        Returns: Array<{
+          exercice_id: string;
+          dernier_poids: number | null;
+          derniers_reps: number | null;
+          derniere_date: string | null;
+          records: Array<{ type: TypeRecord; valeur: number; poids: number | null }>;
+        }>;
+      };
     };
     Enums: {
       objectif: Objectif;

@@ -1,11 +1,16 @@
-import type { ElementType, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type Props = {
   ton?: "brume" | "nue" | "encre" | "signal";
   /** `bloc` = 28px (contenu), `petit` = 18px, `nul` = arêtes vives. */
   rayon?: "bloc" | "petit" | "nul";
-  as?: ElementType;
+  /**
+   * Balise de rendu. Volontairement restreinte plutôt que `ElementType` :
+   * React Three Fiber élargit JSX.IntrinsicElements, et un `ElementType`
+   * générique devient alors ambigu pour TypeScript.
+   */
+  as?: "div" | "section" | "article" | "aside" | "li" | "ul" | "nav" | "header" | "footer";
   className?: string;
   children: ReactNode;
 };

@@ -175,3 +175,38 @@ begin
     format($q$ insert into public.seances (user_id, nom) values (%L, 'Doublon') $q$, v_alice),
     'deux séances en cours pour le même membre');
 end $$;
+
+-- ───────────────────── Contexte d'exercice ─────────────────────
+-- `contexte_exercices` s'appuie sur auth.uid() : sans sub de JWT, elle ne
+-- renverrait rien. On se présente donc comme Alice.
+
+select id as alice from public.profiles where prenom = 'Alice' \gset
+select set_config('request.jwt.claim.sub', :'alice', false) \gset ignore_
+
+do $$
+declare
+  v_dev   uuid := (select id from public.exercices where slug = 'developpe-couche');
+  v_squat uuid := (select id from public.exercices where slug = 'squat-barre');
+  v_ligne record;
+begin
+  perform public.verifier(
+    (select count(*) from public.contexte_exercices(array[v_dev, v_squat])) = 2,
+    'le contexte renvoie une ligne par exercice demandé, même sans historique');
+
+  select * into v_ligne from public.contexte_exercices(array[v_squat]);
+  perform public.verifier(v_ligne.dernier_poids is null, 'aucune dernière perf sur un exercice jamais fait');
+  perform public.verifier(v_ligne.records = '[]'::jsonb, 'aucun record sur un exercice jamais fait');
+
+  select * into v_ligne from public.contexte_exercices(array[v_dev]);
+  perform public.verifier(jsonb_array_length(v_ligne.records) = 4, 'les quatre records du développé sont renvoyés');
+  perform public.verifier(v_ligne.dernier_poids is null, 'une séance encore en cours ne compte pas comme dernière perf');
+
+  update public.seances set statut = 'terminee', terminee_a = now()
+   where user_id = auth.uid() and statut = 'en_cours';
+
+  select * into v_ligne from public.contexte_exercices(array[v_dev]);
+  perform public.verifier(v_ligne.dernier_poids = 80 and v_ligne.derniers_reps = 11,
+    'la dernière perf est la dernière série validée de la dernière séance terminée');
+end $$;
+
+select set_config('request.jwt.claim.sub', '', false) \gset ignore_

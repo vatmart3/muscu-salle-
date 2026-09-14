@@ -2,6 +2,22 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lots 5 et 6 : séance en direct et bilan
+
+- **2026-09-14** — **Les identifiants viennent du client** (`crypto.randomUUID`) pour les séries et les exercices de séance. C'est ce qui rend la synchronisation idempotente : renvoyer deux fois le même instantané ne crée rien en double, et un envoi perdu est simplement remplacé par le suivant.
+- **2026-09-14** — La synchronisation est un **instantané complet**, pas un journal d'opérations. Un journal aurait exigé un ordre garanti et une reprise sur erreur ; l'instantané converge tout seul. Coût assumé : on renvoie toute la séance (quelques dizaines de lignes) à chaque envoi.
+- **2026-09-14** — **Le démarrage exige le réseau**, tout le reste non. C'est le seul moment où il faut la bibliothèque, la dernière performance et les records. Une fois la séance lancée, saisie, validation, détection de record, chrono et timer fonctionnent sans réseau.
+- **2026-09-14** — Le chrono et le timer de repos se calculent depuis un **horodatage**, jamais depuis un compteur incrémenté : verrouiller le téléphone ou changer d'app ne les fait pas dériver.
+- **2026-09-14** — La détection de record est **locale d'abord** (`lib/calculs`), le serveur tranche ensuite : `synchroniserSeance` relit `est_record` et le magasin se réaligne. Sans la détection locale, aucune célébration ne serait possible hors-ligne.
+- **2026-09-14** — Les records qui viennent de tomber entrent **immédiatement** dans les records connus du magasin : sans ça, la série suivante rebattrait le même record et déclencherait une seconde célébration.
+- **2026-09-14** — **Une seule célébration à la fois**, même quand quatre records tombent d'un coup (première série sur un exercice neuf). Ordre de préférence : charge max, 1RM, reps, volume.
+- **2026-09-14** — Le timer de repos est une **surcouche non bloquante** posée au-dessus du bouton de validation : on doit pouvoir corriger la série qu'on vient de valider, ce qui arrive dès qu'on s'est trompé d'un disque.
+- **2026-09-14** — L'anneau de complétion a été **retiré du titre de l'exercice** : il faisait doublon avec la rangée d'anneaux de la barre haute, et volait la largeur au nom de l'exercice.
+- **2026-09-14** — La permission de notification est demandée **au premier repos déclenché**, pas au chargement de la page : une demande à froid se fait refuser.
+- **2026-09-14** — Clôturer une séance **exige le réseau** et le dit franchement plutôt que de faire semblant : la séance reste sur le téléphone jusqu'au retour de la connexion.
+- **2026-09-14** — Le ressenti de fin de séance se lit en **disques de taille croissante**, pas en arcs : les arcs ressemblaient à des indicateurs de chargement.
+- **2026-09-14** — Les aperçus d'écran (`/design/apercus/*`) sont **coupés en production** par leur layout : ils remplissent le magasin de séance avec des données factices et écraseraient une séance en cours.
+
 ## 2026-09-14 — Lot 4 : onboarding
 
 - **2026-09-14** — **Enregistrement optimiste** : on avance à l'écran suivant tout de suite et on sauvegarde derrière. Un creux de réseau ne doit pas bloquer l'onboarding ; les réponses qui n'ont pas pu partir entrent dans une file de rejeu renvoyée avec l'étape finale. La version bloquante a été écrite d'abord, puis jetée après essai — elle rendait l'app inutilisable dès que Supabase ne répondait pas.

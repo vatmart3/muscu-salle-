@@ -21,6 +21,7 @@ phrase qui tranche.
 | `npm run test` | Vitest — calculs du domaine |
 | `npm run e2e` | Playwright — parcours critique |
 | `npm run verif` | typecheck + lint + test, à lancer avant chaque commit |
+| `npm run db:verif` | Rejoue schéma + tests RLS sur un Postgres nu, sans Docker |
 | `npm run db:reset` | Rejoue toutes les migrations sur la base locale Supabase |
 | `npm run db:push` | Applique les migrations sur le projet distant |
 | `python3 scripts/generer-icones.py` | Régénère les icônes PWA depuis la marque |

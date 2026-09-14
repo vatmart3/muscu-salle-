@@ -15,7 +15,8 @@
     "e2e:ui": "playwright test --ui",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
-    "verif": "npm run typecheck && npm run lint && npm run test"
+    "verif": "npm run typecheck && npm run lint && npm run test",
+    "db:verif": "bash scripts/verifier-migrations.sh"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

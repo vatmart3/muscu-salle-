@@ -2,6 +2,21 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 2 : base de données
+
+- **2026-09-14** — Référence d'interface envoyée par le commanditaire (maquette « Gofit ») : on en garde les **mécaniques** d'onboarding (une question par écran, sélecteurs à molette pour taille/poids/âge, Retour et Continuer toujours visibles, récapitulatif de profil) et **rien du look** (violet, fond sombre, photos pleine largeur, connexions sociales). Les règles 1 à 3 du brief priment.
+- **2026-09-14** — Les migrations sont vérifiées sur un **Postgres nu** via `scripts/harnais-postgres.sql`, qui reproduit le minimum de l'environnement Supabase (schémas `auth` et `storage`, rôles, `auth.uid()`). `npm run db:verif` rejoue tout le schéma et les tests de RLS sans Docker ni CLI Supabase.
+- **2026-09-14** — **Faille corrigée avant d'écrire une ligne d'interface** : la RLS raisonne par ligne, pas par colonne. La policy « tu modifies ta propre ligne » laissait un membre passer `profiles.role` à `admin` et gonfler `seances.volume_total`, donc le classement de la salle. Fermé par des droits `GRANT UPDATE (colonnes)` explicites plus un déclencheur `verrouiller_role`. Trouvé par les tests, pas par relecture.
+- **2026-09-14** — `role` n'est modifiable par **personne** depuis l'API. Le premier inscrit est promu administrateur par déclencheur, toute autre promotion passe par du SQL volontaire. L'espace admin gère les accès, pas les rangs.
+- **2026-09-14** — Le code d'accès est **consommé dans la même transaction que la création du compte** (déclencheur sur `auth.users`) : pas de compte sans code valable, pas de code brûlé sans compte. La route d'inscription revalide en amont, uniquement pour donner un message clair.
+- **2026-09-14** — Le classement est une **vue `security_invoker = false`** et non une table : elle ne peut exposer que prénom, semaine, séances et tonnage, et seulement pour les membres opt-in. Un test vérifie la liste exacte des colonnes.
+- **2026-09-14** — Aucune policy administrateur sur `mesures` et `photos_progres`, volontairement. Un administrateur de salle gère les accès, pas les corps. Testé.
+- **2026-09-14** — Les records sont écrits **uniquement par déclencheur** (`series_enregistrer_records`) : aucune policy `insert`/`update` sur `records`. Personne ne se fabrique un record.
+- **2026-09-14** — Contrainte d'unicité partielle `seances_une_seule_en_cours_idx` : un membre ne peut avoir qu'une séance en cours. C'est ce qui rend fiable la reprise de séance après fermeture de l'app.
+- **2026-09-14** — Les 131 exercices sont générés par `scripts/generer-seed-exercices.py` plutôt qu'écrits à la main dans le SQL : l'échappement des apostrophes françaises est la source d'erreur numéro un d'un seed de cette taille.
+- **2026-09-14** — Les mouvements Hyrox référencent du matériel absent du garage (traîneau, rameur, ski erg, medecine ball, sac). Conservés dans le seed : l'onboarding filtre sur le matériel déclaré, ils n'apparaissent donc que pour qui les coche.
+- **2026-09-14** — Le groupe secondaire d'un exercice compte pour **moitié** dans `volume_par_groupe`, qui alimente la carte corporelle. Compter plein aurait teinté tout le haut du corps à chaque développé couché.
+
 ## 2026-09-14 — Lot 1 : fondations
 
 - **2026-09-14** — Next.js 15.5 + React 19 + Tailwind v4 : stack imposée, App Router, Server Components par défaut.

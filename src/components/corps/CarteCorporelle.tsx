@@ -65,10 +65,12 @@ export function CarteCorporelle({
       </div>
 
       <div className="flex items-start gap-5">
+        {/* `role="group"` et non `role="img"` : la silhouette contient des
+            cibles focusables, et une image ne doit pas en contenir. */}
         <svg
           viewBox="0 0 200 420"
           className="h-80 w-auto shrink-0"
-          role="img"
+          role="group"
           aria-label={`Silhouette vue de ${vue}, teintée selon le volume des ${jours} derniers jours`}
         >
           {SILHOUETTE[vue].map(({ groupe, formes }) => {

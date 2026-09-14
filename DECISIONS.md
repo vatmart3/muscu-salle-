@@ -2,6 +2,16 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 12 : accessibilité, performance, tests, déploiement
+
+- **2026-09-14** — **Violation de contraste trouvée par axe, pas par relecture** : `--color-texte-tenu` était à `rgb(10 22 40 / .42)`, soit **2,72:1** sur blanc — décoratif — alors qu'il portait les étiquettes KG, REPS et toutes les mentions. Hiérarchie de gris refaite à trois niveaux conformes AA **sur blanc et sur `--color-surface`** : 18:1 / 9:1 / 4,9:1.
+- **2026-09-14** — La silhouette de la carte corporelle portait `role="img"` tout en contenant des cibles focusables : `nested-interactive`. Passée en `role="group"`.
+- **2026-09-14** — **Le héros 3D de l'accueil est remplacé par un SVG animé en CSS.** React Three Fiber coûtait ~700 ms de blocage du fil principal sur la seule page qui doit être rapide : score de performance mobile **81**. En SVG, même image et même chorégraphie (chargement orchestré en 2 s, puis suivi du curseur et de l'inclinaison), pour **97**. Le §8 du brief pose le plancher de performance comme non négociable ; il l'emporte sur le troisième emploi de la 3D. Les deux autres moments 3D — le disque du record, le mur des records — sont derrière l'authentification et restent en 3D.
+- **2026-09-14** — Une tentative intermédiaire (monter le canevas à `requestIdleCallback`) a été mesurée puis abandonnée : le rappel se déclenche encore dans la fenêtre de mesure, et repousser l'animation à quatre secondes aurait donné l'impression d'un héros cassé.
+- **2026-09-14** — Recharts et le client Supabase navigateur sont chargés à la demande : `/progression` passe de 220 à 114 ko, `/corps` de 184 à 115 ko de premier chargement.
+- **2026-09-14** — Le parcours Playwright complet se **déclare ignoré** quand Supabase n'est pas configuré, plutôt que rouge : un test rouge par absence d'environnement ne dit rien sur le code et finit par être ignoré pour de mauvaises raisons.
+- **2026-09-14** — Piège d'outillage consigné dans CLAUDE.md et le README : `next dev` et `next build` partagent `.next`. Construire pendant qu'un serveur tourne produit un build corrompu qui répond 400 sur tous les fichiers statiques — et des scores Lighthouse flatteurs mais faux, puisque le JavaScript ne se charge jamais. Deux mesures ont été invalidées par ce piège avant qu'il soit identifié.
+
 ## 2026-09-14 — Lot 11 : PWA, hors-ligne et relances
 
 - **2026-09-14** — Le service worker ne met **jamais en cache** `/api/*`, `/auth/*` ni les appels Supabase : les données d'un membre n'ont rien à faire dans un cache partagé avec le navigateur. Il garde la coquille, les polices, les icônes et les pages déjà visitées.

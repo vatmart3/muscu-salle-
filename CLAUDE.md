@@ -29,6 +29,12 @@ phrase qui tranche.
 
 Supabase en local : `supabase start` puis `supabase db reset`.
 
+> **Piège :** `next dev` et `next build` partagent `.next`. Construire pendant
+> qu'un serveur de développement tourne produit un build corrompu qui répond
+> 400 sur tous les fichiers statiques — et des scores Lighthouse flatteurs mais
+> faux, puisque le JavaScript ne se charge pas. Arrête le serveur avant de
+> construire, et redémarre-le après.
+
 ---
 
 ## Architecture

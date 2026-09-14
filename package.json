@@ -17,7 +17,9 @@
     "db:push": "supabase db push",
     "verif": "npm run typecheck && npm run lint && npm run test",
     "db:verif": "bash scripts/verifier-migrations.sh",
-    "emails": "python3 scripts/generer-emails.py"
+    "emails": "python3 scripts/generer-emails.py",
+    "e2e:public": "playwright test --project=public",
+    "e2e:parcours": "playwright test --project=parcours"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -37,6 +39,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/eslintrc": "^3.3.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -45,8 +48,10 @@
     "@types/react-dom": "^19.1.0",
     "@types/three": "^0.180.0",
     "@types/web-push": "^3.6.4",
+    "axe-core": "^4.13.0",
     "eslint": "^9.30.0",
     "eslint-config-next": "15.5.25",
+    "lighthouse": "^13.4.1",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",

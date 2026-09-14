@@ -20,8 +20,11 @@
   --color-surface: #eef3fa;
   --color-surface-creuse: #e2eaf6;
   --color-texte: #0a1628;
-  --color-texte-doux: rgb(10 22 40 / 0.66);
-  --color-texte-tenu: rgb(10 22 40 / 0.42);
+  /* Trois niveaux, tous conformes AA sur blanc ET sur `--color-surface` :
+     18:1, 9:1, 4,9:1. Le troisième était à 2,72:1 — c'est-à-dire décoratif —
+     alors qu'il portait les étiquettes KG, REPS et les mentions. */
+  --color-texte-doux: rgb(10 22 40 / 0.78);
+  --color-texte-tenu: rgb(10 22 40 / 0.64);
   --color-trait: rgb(10 22 40 / 0.08);
   --color-trait-fort: rgb(10 22 40 / 0.22);
   --color-accent: #0071e3;
@@ -84,8 +87,8 @@
     --color-surface: #101b2b;
     --color-surface-creuse: #18263a;
     --color-texte: #eef3fa;
-    --color-texte-doux: rgb(238 243 250 / 0.7);
-    --color-texte-tenu: rgb(238 243 250 / 0.45);
+    --color-texte-doux: rgb(238 243 250 / 0.8);
+    --color-texte-tenu: rgb(238 243 250 / 0.55);
     --color-trait: rgb(238 243 250 / 0.12);
     --color-trait-fort: rgb(238 243 250 / 0.28);
     --color-accent: #4da3ff;
@@ -216,5 +219,49 @@
   -ms-overflow-style: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ═══════════ Héros de l'accueil ═══════════
+   Seule animation de toute l'application qui ne soit pas déclenchée par
+   l'utilisateur. Elle joue une fois, deux secondes, puis s'arrête. */
+
+.barre-heros {
+  perspective: 900px;
+}
+
+.barre-heros__scene {
+  transform: rotateY(var(--incline-y, 0deg)) rotateX(var(--incline-x, 0deg));
+  transform-origin: 250px 90px;
+  transition: transform 600ms var(--courbe-disque);
+  transform-box: fill-box;
+}
+
+.barre-heros__disque {
+  animation: charger-disque 620ms var(--courbe-disque) both;
+  animation-delay: var(--retard);
+}
+
+@keyframes charger-disque {
+  from {
+    transform: translateX(var(--depart)) scale(0.35);
+    opacity: 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barre-heros__disque {
+    animation: none;
+  }
+  .barre-heros__scene {
+    transform: none;
+    transition: none;
   }
 }

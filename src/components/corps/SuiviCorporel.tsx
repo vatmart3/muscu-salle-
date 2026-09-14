@@ -2,13 +2,12 @@
 
 import { useActionState, useMemo, useState, useTransition } from "react";
 import { enregistrerMesure, enregistrerPhoto, supprimerPhoto, type EtatMesure } from "@/actions/corps";
-import { clientNavigateur } from "@/lib/supabase/client";
-import { CourbePoids } from "@/components/graphes/CourbePoids";
+import dynamic from "next/dynamic";
 import { Comparateur, type PhotoComparee } from "./Comparateur";
 import { Bouton } from "@/components/ui/Bouton";
 import { Champ, ChampTexte } from "@/components/ui/Champ";
 import { TitreSection } from "@/components/ui/Surface";
-import { BandeauErreur, BandeauFait, EtatVide } from "@/components/ui/Etats";
+import { BandeauErreur, BandeauFait, EtatVide, Squelette } from "@/components/ui/Etats";
 import { Pastille } from "@/components/ui/Pastille";
 import { moyenneMobile, progressionRelative } from "@/lib/calculs";
 import { cleJour, jourComplet, jourMois, nombre } from "@/lib/format";
@@ -28,6 +27,12 @@ export type MesureLigne = {
 };
 
 export type PhotoLigne = { id: string; date: string; angle: Angle; storage_path: string; url: string };
+
+/** Même raison que sur la progression : Recharts se charge à la demande. */
+const CourbePoids = dynamic(() => import("@/components/graphes/CourbePoids").then((m) => m.CourbePoids), {
+  ssr: false,
+  loading: () => <Squelette rayon="bloc" className="h-56 w-full" />,
+});
 
 const ANGLES: Array<{ cle: Angle; libelle: string }> = [
   { cle: "face", libelle: "Face" },
@@ -88,6 +93,9 @@ export function SuiviCorporel({
     const date = cleJour(new Date());
     const chemin = `${membreId}/${angle}/${date}-${crypto.randomUUID()}.${extension}`;
 
+    // Import différé : le client Supabase navigateur pèse une soixantaine de
+    // kilo-octets et ne sert qu'au moment où une photo part réellement.
+    const { clientNavigateur } = await import("@/lib/supabase/client");
     const supabase = clientNavigateur();
     const { error } = await supabase.storage.from("photos-progres").upload(chemin, fichier, {
       cacheControl: "3600",

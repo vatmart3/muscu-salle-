@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { progressionExercice } from "@/actions/progression";
-import { CourbeProgression, type PointProgression } from "@/components/graphes/CourbeProgression";
+import dynamic from "next/dynamic";
+import type { PointProgression } from "@/components/graphes/CourbeProgression";
 import { PileDeDisques, type SemaineTonnage } from "@/components/graphes/PileDeDisques";
 import { CarteCorporelle, type VolumeGroupe } from "@/components/corps/CarteCorporelle";
 import { Surface, TitreSection } from "@/components/ui/Surface";
@@ -13,6 +14,15 @@ import { dureeLisible, entier, nombre } from "@/lib/format";
 import type { Unite } from "@/lib/types";
 
 export type ExerciceSuivi = { id: string; nom: string; seances: number };
+
+/**
+ * Recharts pèse une centaine de kilo-octets : il ne se charge qu'au moment où
+ * une courbe doit réellement s'afficher, pas à l'ouverture de la page.
+ */
+const CourbeProgression = dynamic(
+  () => import("@/components/graphes/CourbeProgression").then((m) => m.CourbeProgression),
+  { ssr: false, loading: () => <Squelette rayon="bloc" className="h-64 w-full" /> },
+);
 
 /**
  * Progression : une courbe par exercice, le tonnage hebdomadaire lu comme une

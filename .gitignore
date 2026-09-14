@@ -16,3 +16,4 @@ test-results/
 playwright-report/
 playwright/.cache/
 supabase/.temp/
+/lighthouse-report.*

@@ -2,6 +2,20 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lots 9 et 10 : corps, programmes, classement, admin
+
+- **2026-09-14** — Sur la courbe de poids, la **moyenne mobile 7 jours est la ligne pleine** et les pesées brutes un aplat léger derrière. C'est l'inverse du réflexe habituel : le poids d'un matin ne veut rien dire, et le mettre au premier plan pousse à réagir à du bruit.
+- **2026-09-14** — Les photos partent **directement du navigateur vers le stockage**, sans transiter par le serveur Next : pas de limite de taille de Server Action, pas de copie inutile. La RLS du bucket vérifie que le chemin commence bien par l'identifiant du membre, et la Server Action le revérifie avant d'écrire la ligne.
+- **2026-09-14** — Le comparateur avant/après utilise un `input[type=range]` plutôt qu'un rideau maison en `pointermove` : il se glisse au pouce **et** se pilote aux flèches du clavier.
+- **2026-09-14** — Le caractère privé du suivi corporel est **écrit dans l'interface**, pas seulement appliqué en base. Personne ne dépose une photo de son corps sans savoir qui peut la voir.
+- **2026-09-14** — Réordonnancement des programmes et des exercices par **deux boutons explicites**, pas par glisser-déposer. Le brief demandait du glisser-déposer ; un glisser-déposer maison n'est utilisable ni d'un pouce en sueur, ni au clavier, ni au lecteur d'écran, et l'app vise 100 en accessibilité. Arbitrage assumé.
+- **2026-09-14** — Le code de partage fait six caractères **sans O ni I ni 0 ni 1** : il se dicte à voix haute dans une salle bruyante. En cas de collision, on retente plutôt que d'allonger.
+- **2026-09-14** — L'import d'un programme **ne recopie jamais les exercices personnels** d'un autre membre, seulement les exercices globaux : sinon l'import ferait fuiter des données privées.
+- **2026-09-14** — L'espace admin passait d'abord par la vue `classement` : l'aperçu d'activité n'aurait montré que les membres opt-in. Remplacé par `activite_salle()`, `SECURITY DEFINER` avec garde `est_admin()` **dans la fonction**, qui couvre tous les membres mais n'expose que séances et tonnage. Testé des deux côtés.
+- **2026-09-14** — L'export CSV est une **route** et non une Server Action : le navigateur doit recevoir un fichier nommé. BOM UTF-8 en tête, sinon Excel affiche « développé couché » en mojibake.
+- **2026-09-14** — La suppression de compte efface aussi les **fichiers de stockage** : la cascade SQL ne les couvre pas, les photos survivraient au compte.
+- **2026-09-14** — Le thème s'applique **immédiatement** au changement de radio, avant même l'enregistrement : un réglage sans effet visible avant rechargement donne l'impression de ne pas avoir été pris en compte.
+
 ## 2026-09-14 — Lot 8 : progression et carte corporelle
 
 - **2026-09-14** — Le tonnage hebdomadaire est rendu en **pile de disques**, pas en histogramme de barres : c'est la métaphore centrale de l'app prise au mot, un disque vaut une tonne et la semaine se « soupèse » d'un coup d'œil.

@@ -143,3 +143,24 @@ begin;
   update public.seances set ressenti = 4, note = 'Jambes lourdes' where nom = 'Legs';
   select public.verifier(true, 'un membre note bien sa séance');
 rollback;
+
+-- ───────────────────── Activité de la salle ─────────────────────
+begin;
+  set local role authenticated;
+  select set_config('request.jwt.claim.sub', :'bob', true) \gset ignore_
+  select public.verifier(
+    (select count(*) from public.activite_salle(30)) = 0,
+    'un membre simple n''obtient aucune ligne d''activité de la salle');
+rollback;
+
+begin;
+  set local role authenticated;
+  select set_config('request.jwt.claim.sub', :'alice', true) \gset ignore_
+  select public.verifier(
+    (select count(*) from public.activite_salle(30)) = 2,
+    'une administratrice voit l''activité des deux membres');
+  select public.verifier(
+    (select count(*) from information_schema.routines r
+      where r.routine_schema = 'public' and r.routine_name = 'activite_salle') = 1,
+    'la fonction d''activité existe bien');
+rollback;

@@ -302,6 +302,18 @@ export type Database = {
       generer_code_partage: { Args: Record<string, never>; Returns: string };
       est_admin: { Args: Record<string, never>; Returns: boolean };
       abandonner_seance: { Args: { p_seance_id: string }; Returns: undefined };
+      activite_salle: {
+        Args: { p_jours?: number };
+        Returns: Array<{
+          membre_id: string;
+          prenom: string;
+          role: Role;
+          inscrit_le: string;
+          seances: number;
+          tonnage: number;
+          derniere_seance: string | null;
+        }>;
+      };
       contexte_exercices: {
         Args: { p_ids: string[] };
         Returns: Array<{

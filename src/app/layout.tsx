@@ -3,6 +3,7 @@ import "./globals.css";
 import { policeAffichage, policeUi } from "@/lib/fonts";
 import { MARQUE } from "@/lib/brand";
 import { DefsAnneaux } from "@/components/ui/DefsAnneaux";
+import { EnregistrerServiceWorker } from "@/components/pwa/EnregistrerServiceWorker";
 
 export const metadata: Metadata = {
   title: { default: `${MARQUE.nom} — ${MARQUE.baseline}`, template: `%s · ${MARQUE.nom}` },
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <DefsAnneaux />
         {children}
+        <EnregistrerServiceWorker />
       </body>
     </html>
   );

@@ -11,6 +11,7 @@ const PUBLICS = [
   "/nouveau-mot-de-passe",
   "/auth",
   "/design",
+  "/hors-ligne",
 ];
 
 function estPublic(chemin: string): boolean {

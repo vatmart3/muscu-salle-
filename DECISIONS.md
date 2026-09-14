@@ -2,6 +2,17 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 11 : PWA, hors-ligne et relances
+
+- **2026-09-14** — Le service worker ne met **jamais en cache** `/api/*`, `/auth/*` ni les appels Supabase : les données d'un membre n'ont rien à faire dans un cache partagé avec le navigateur. Il garde la coquille, les polices, les icônes et les pages déjà visitées.
+- **2026-09-14** — Navigations en **réseau d'abord, cache ensuite, page hors-ligne en dernier**. C'est ce qui permet de rouvrir `/seance` sans réseau : la page revient du cache et l'état de la séance est rechargé depuis `localStorage`.
+- **2026-09-14** — Le service worker est **désenregistré en développement** : un worker qui sert une version en cache pendant qu'on modifie le code fait perdre des heures.
+- **2026-09-14** — La permission de notification n'est demandée **qu'au clic explicite** sur le bouton d'abonnement. Une demande au chargement se fait refuser par le navigateur comme par l'utilisateur.
+- **2026-09-14** — Les relances passent par un **Cron Vercel** protégé par `CRON_SECRET` : sans ce garde, l'URL permettrait à n'importe qui de déclencher un envoi en masse.
+- **2026-09-14** — Un abonnement push qui répond 404 ou 410 est **supprimé** plutôt que réessayé : sinon le cron s'acharne chaque jour sur des téléphones qui n'existent plus.
+- **2026-09-14** — On ne relance **jamais quelqu'un qui n'a aucune séance** : un nouvel inscrit n'a rien à reprendre, et une relance à vide est la meilleure façon de se faire couper les notifications.
+- **2026-09-14** — La page hors-ligne dit **ce qui est conservé** (la séance en cours, les séries validées) et non juste « pas de connexion ».
+
 ## 2026-09-14 — Lots 9 et 10 : corps, programmes, classement, admin
 
 - **2026-09-14** — Sur la courbe de poids, la **moyenne mobile 7 jours est la ligne pleine** et les pesées brutes un aplat léger derrière. C'est l'inverse du réflexe habituel : le poids d'un matin ne veut rien dire, et le mettre au premier plan pousse à réagir à du bruit.

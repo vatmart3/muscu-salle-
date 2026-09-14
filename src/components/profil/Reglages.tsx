@@ -8,6 +8,7 @@ import { Champ, ChampSelect } from "@/components/ui/Champ";
 import { Feuille } from "@/components/ui/Feuille";
 import { Surface, TitreSection } from "@/components/ui/Surface";
 import { BandeauErreur, BandeauFait } from "@/components/ui/Etats";
+import { Relances } from "@/components/pwa/Relances";
 import { LIBELLE_OBJECTIF, type Objectif, type Role, type Unite } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -89,9 +90,10 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
           <Interrupteur
             nom="relance_active"
             libelle="Relance après trois jours sans séance"
-            detail="Une notification, formulée comme un fait. Elle demande l'autorisation du navigateur."
+            detail="Une notification qui énonce un fait, pas un reproche."
             defaut={profil.relance_active}
           />
+          <Relances actif={profil.relance_active} />
         </section>
 
         <section className="flex flex-col gap-4">

@@ -209,3 +209,12 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* La molette masque sa barre de défilement : la fenêtre de lecture suffit. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -180,29 +180,65 @@ export type LigneClassement = {
  * On ne décrit pas les jointures implicites : les requêtes imbriquées de ce
  * projet passent toutes par des noms de contrainte explicites.
  */
-type Table<L, I = Partial<L>, U = Partial<L>> = {
+type Table<L, I, U = Partial<L>> = {
   Row: L;
   Insert: I;
   Update: U;
   Relationships: [];
 };
 
+/**
+ * Les formes d'insertion sont écrites colonne par colonne plutôt que dérivées
+ * de la ligne : c'est la seule façon de refléter fidèlement quelles colonnes
+ * ont un DEFAULT en base et lesquelles sont obligatoires.
+ */
+type InsertExercice = Pick<Exercice, "nom" | "slug" | "groupe_principal" | "equipement"> &
+  Partial<Pick<Exercice, "id" | "groupes_secondaires" | "type" | "instructions" | "is_custom" | "owner_id">>;
+
+type InsertModele = Pick<SeanceModele, "owner_id" | "nom"> &
+  Partial<Pick<SeanceModele, "id" | "description" | "couleur" | "ordre" | "code_partage">>;
+
+type InsertModeleExercice = Pick<ModeleExercice, "modele_id" | "exercice_id"> &
+  Partial<Pick<ModeleExercice, "id" | "ordre" | "series_cible" | "reps_cible" | "repos_secondes" | "notes">>;
+
+type InsertSeance = Pick<Seance, "user_id"> &
+  Partial<Pick<Seance, "id" | "modele_id" | "nom" | "demarree_a" | "terminee_a" | "duree_secondes" | "ressenti" | "note" | "statut">>;
+
+type InsertSeanceExercice = Pick<SeanceExercice, "seance_id" | "exercice_id"> &
+  Partial<Pick<SeanceExercice, "id" | "ordre" | "repos_secondes" | "note">>;
+
+type InsertSerie = Pick<Serie, "seance_exercice_id" | "index_serie"> &
+  Partial<Pick<Serie, "id" | "poids" | "reps" | "secondes" | "metres" | "rpe" | "type" | "validee" | "created_at">>;
+
+type InsertMesure = Pick<Mesure, "user_id"> &
+  Partial<Pick<Mesure, "id" | "date" | "poids_kg" | "masse_grasse" | "tour_bras" | "tour_poitrine" | "tour_taille" | "tour_cuisse" | "note">>;
+
+type InsertPhoto = Pick<PhotoProgres, "user_id" | "angle" | "storage_path"> &
+  Partial<Pick<PhotoProgres, "id" | "date">>;
+
+type InsertCode = Pick<CodeAcces, "code"> &
+  Partial<Pick<CodeAcces, "actif" | "utilisations_max" | "utilisations" | "cree_par">>;
+
+type InsertAbonnement = Pick<AbonnementPush, "user_id" | "endpoint" | "p256dh" | "auth"> &
+  Partial<Pick<AbonnementPush, "id">>;
+
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<Profil>;
-      exercices: Table<Exercice, Omit<Exercice, "id" | "created_at"> & { id?: string }>;
-      seances_modeles: Table<SeanceModele, Omit<SeanceModele, "id" | "created_at" | "code_partage"> & { id?: string; code_partage?: string | null }>;
-      modele_exercices: Table<ModeleExercice, Omit<ModeleExercice, "id"> & { id?: string }>;
-      seances: Table<Seance, Omit<Seance, "id" | "created_at" | "volume_total" | "demarree_a"> & { id?: string; demarree_a?: string }>;
-      seance_exercices: Table<SeanceExercice, Omit<SeanceExercice, "id"> & { id?: string }>;
-      series: Table<Serie, Omit<Serie, "id" | "created_at" | "est_record"> & { id?: string }>;
-      mesures: Table<Mesure, Omit<Mesure, "id" | "created_at"> & { id?: string }>;
-      photos_progres: Table<PhotoProgres, Omit<PhotoProgres, "id" | "created_at"> & { id?: string }>;
+      /** Créé par déclencheur à l'inscription : jamais inséré depuis le client. */
+      profiles: Table<Profil, Pick<Profil, "id" | "prenom">>;
+      exercices: Table<Exercice, InsertExercice>;
+      seances_modeles: Table<SeanceModele, InsertModele>;
+      modele_exercices: Table<ModeleExercice, InsertModeleExercice>;
+      seances: Table<Seance, InsertSeance>;
+      seance_exercices: Table<SeanceExercice, InsertSeanceExercice>;
+      series: Table<Serie, InsertSerie>;
+      mesures: Table<Mesure, InsertMesure>;
+      photos_progres: Table<PhotoProgres, InsertPhoto>;
       /** Écrits uniquement par déclencheur : rien à insérer ni à modifier depuis le client. */
       records: Table<RecordPerso, Record<string, never>, Record<string, never>>;
-      codes_acces: Table<CodeAcces, Omit<CodeAcces, "utilisations" | "created_at"> & { utilisations?: number }>;
-      abonnements_push: Table<AbonnementPush, Omit<AbonnementPush, "id" | "created_at"> & { id?: string }>;
+      codes_acces: Table<CodeAcces, InsertCode>;
+      abonnements_push: Table<AbonnementPush, InsertAbonnement>;
     };
     Views: {
       classement: { Row: LigneClassement; Relationships: [] };

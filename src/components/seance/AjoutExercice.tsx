@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { chercherExercices, preparerExercice, type FicheExercice } from "@/actions/seance";
+import { chercher, type FicheExercice } from "@/lib/exercices";
+import { preparerExercice } from "@/lib/donnees/seance";
 import { Feuille } from "@/components/ui/Feuille";
 import { Champ } from "@/components/ui/Champ";
 import { Squelette, EtatVide, BandeauErreur } from "@/components/ui/Etats";
@@ -15,13 +16,11 @@ import type { ExerciceLocal } from "@/stores/seance";
  */
 export function AjoutExercice({
   ouverte,
-  seanceId,
   ordre,
   onFermer,
   onAjoute,
 }: {
   ouverte: boolean;
-  seanceId: string;
   ordre: number;
   onFermer: () => void;
   onAjoute: (exercice: ExerciceLocal) => void;
@@ -32,29 +31,23 @@ export function AjoutExercice({
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
 
+  // La bibliothèque est embarquée : la recherche est synchrone, sans réseau
+  // ni temporisation. On la garde dans un effet pour ne filtrer qu'à
+  // l'ouverture de la feuille.
   useEffect(() => {
     if (!ouverte) return;
-    let annule = false;
-    const minuterie = setTimeout(() => {
-      void chercherExercices(recherche, groupe ?? undefined).then((liste) => {
-        if (!annule) setResultats(liste);
-      });
-    }, 180);
-    return () => {
-      annule = true;
-      clearTimeout(minuterie);
-    };
+    setResultats(chercher(recherche, groupe));
   }, [ouverte, recherche, groupe]);
 
   function ajouter(fiche: FicheExercice) {
     setErreur(null);
     demarrer(async () => {
-      const resultat = await preparerExercice(fiche.id, seanceId, ordre);
-      if (resultat.erreur || !resultat.exercice) {
-        setErreur(resultat.erreur ?? "L'exercice n'a pas pu être ajouté.");
+      const exercice = await preparerExercice(fiche.id, ordre);
+      if (!exercice) {
+        setErreur("L'exercice n'a pas pu être ajouté.");
         return;
       }
-      onAjoute(resultat.exercice);
+      onAjoute(exercice);
       onFermer();
     });
   }

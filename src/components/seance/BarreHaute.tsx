@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Anneau } from "@/components/ui/Anneau";
 import { IndicateurSynchro } from "./IndicateurSynchro";
-import type { EtatSynchro } from "@/hooks/useSynchro";
+import type { EtatPersistance } from "@/hooks/usePersistance";
 import { chrono, entier } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { ExerciceLocal } from "@/stores/seance";
@@ -31,7 +31,7 @@ export function BarreHaute({
   exercices: ExerciceLocal[];
   indexActif: number;
   onChoisir: (index: number) => void;
-  etatSynchro: EtatSynchro;
+  etatSynchro: EtatPersistance;
   onForcerSynchro: () => void;
 }) {
   return (

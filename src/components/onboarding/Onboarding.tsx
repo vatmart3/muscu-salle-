@@ -2,7 +2,10 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { AnimatePresence } from "framer-motion";
-import { sauverEtape, terminerOnboarding } from "@/actions/onboarding";
+import { depot } from "@/lib/donnees/depot";
+import { creerProgramme } from "@/lib/donnees/programmes";
+import { cleJour } from "@/lib/format";
+import { useRouter } from "next/navigation";
 import { Bouton } from "@/components/ui/Bouton";
 import { Champ, ChampTexte } from "@/components/ui/Champ";
 import { BandeauErreur } from "@/components/ui/Etats";
@@ -16,27 +19,77 @@ import { Recapitulatif } from "./Recapitulatif";
 
 export type Reponses = Partial<DonneesOnboarding> & { poids_kg?: number };
 
+/**
+ * Écrit les réponses là où elles vivent : le poids va dans les mesures, tout
+ * le reste dans le profil. Une pesée n'est pas une donnée de profil, c'est le
+ * premier point d'une courbe.
+ */
+async function ecrireReponses(patch: Reponses): Promise<boolean> {
+  const { poids_kg, blessures, ...profil } = patch;
+  if (Object.keys(profil).length > 0 || blessures !== undefined) {
+    await depot().enregistrerProfil({
+      ...profil,
+      ...(blessures !== undefined ? { blessures: blessures || null } : {}),
+    });
+  }
+  if (poids_kg !== undefined) {
+    const date = cleJour(new Date());
+    const existante = (await depot().mesures()).find((m) => m.date === date);
+    await depot().enregistrerMesure({
+      date,
+      poids_kg,
+      masse_grasse: existante?.masse_grasse ?? null,
+      tour_bras: existante?.tour_bras ?? null,
+      tour_poitrine: existante?.tour_poitrine ?? null,
+      tour_taille: existante?.tour_taille ?? null,
+      tour_cuisse: existante?.tour_cuisse ?? null,
+      note: existante?.note ?? null,
+    });
+  }
+  return true;
+}
+
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const ANNEE_MAX = new Date().getFullYear() - 13;
 const ANNEES = suite(ANNEE_MAX - 87, ANNEE_MAX).reverse();
 const TAILLES = suite(120, 230);
 const POIDS = suite(35, 200, 0.5);
 
+/**
+ * Valeurs affichées d'entrée par les molettes.
+ *
+ * Elles sont posées dans l'état dès le montage, pas seulement dessinées à
+ * l'écran : une molette qui montre 175 cm alors que la réponse est encore vide
+ * laisse le bouton « Continuer » mort sans que rien ne l'explique. C'est un
+ * défaut que le parcours complet a attrapé, pas la relecture.
+ */
+const DEFAUTS = {
+  taille_cm: 175,
+  poids_kg: 75,
+  date_naissance: `${ANNEE_MAX - 12}-01-01`,
+} as const;
+
 function joursDuMois(annee: number, mois: number): number {
   return new Date(annee, mois, 0).getDate();
 }
 
 export function Onboarding({ initiales }: { initiales: Reponses }) {
-  const [reponses, setReponses] = useState<Reponses>(initiales);
+  const [reponses, setReponses] = useState<Reponses>(() => {
+    const connues = Object.fromEntries(
+      Object.entries(initiales).filter(([, valeur]) => valeur !== undefined && valeur !== ""),
+    ) as Reponses;
+    return { ...DEFAUTS, ...connues };
+  });
   const [etape, setEtape] = useState(0);
   const [sens, setSens] = useState<1 | -1>(1);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
-  /** Réponses dont l'enregistrement a échoué : renvoyées avec l'étape finale. */
+  const routeur = useRouter();
+  /** Réponses non encore écrites : rejouées à l'étape finale. */
   const aRejouer = useRef<Reponses>({});
 
   const naissance = useMemo(() => {
-    const d = reponses.date_naissance ? new Date(reponses.date_naissance) : new Date(ANNEE_MAX - 12, 0, 1);
+    const d = new Date(reponses.date_naissance ?? DEFAUTS.date_naissance);
     return Number.isNaN(d.getTime())
       ? { j: 1, m: 1, a: ANNEE_MAX - 12 }
       : { j: d.getDate(), m: d.getMonth() + 1, a: d.getFullYear() };
@@ -138,7 +191,7 @@ export function Onboarding({ initiales }: { initiales: Reponses }) {
             libelle="Taille"
             suffixe="cm"
             valeurs={TAILLES}
-            valeur={reponses.taille_cm ?? 175}
+            valeur={reponses.taille_cm ?? DEFAUTS.taille_cm}
             onChange={(taille_cm) => setReponses((r) => ({ ...r, taille_cm }))}
           />
         </div>
@@ -156,7 +209,7 @@ export function Onboarding({ initiales }: { initiales: Reponses }) {
             libelle="Poids"
             suffixe="kg"
             valeurs={POIDS}
-            valeur={reponses.poids_kg ?? 75}
+            valeur={reponses.poids_kg ?? DEFAUTS.poids_kg}
             onChange={(poids_kg) => setReponses((r) => ({ ...r, poids_kg }))}
           />
         </div>
@@ -306,9 +359,9 @@ export function Onboarding({ initiales }: { initiales: Reponses }) {
   const question = questions[Math.min(etape, questions.length - 1)]!;
 
   /**
-   * On avance tout de suite et on enregistre derrière. Un creux de réseau ne
-   * doit pas bloquer l'onboarding : la réponse reste à l'écran, elle part dans
-   * la file de rejeu et sera renvoyée avec l'étape finale.
+   * On avance tout de suite et on écrit derrière. L'écriture est locale et
+   * quasi instantanée, mais si le navigateur refuse le stockage (navigation
+   * privée, quota), la réponse reste à l'écran et part dans la file de rejeu.
    */
   function avancer() {
     setErreur(null);
@@ -316,8 +369,8 @@ export function Onboarding({ initiales }: { initiales: Reponses }) {
     setSens(1);
     setEtape((e) => e + 1);
     demarrer(async () => {
-      const resultat = await sauverEtape(patch).catch(() => ({ erreur: "reseau" }));
-      if (resultat.erreur) aRejouer.current = { ...aRejouer.current, ...patch };
+      const ok = await ecrireReponses(patch).catch(() => false);
+      if (!ok) aRejouer.current = { ...aRejouer.current, ...patch };
     });
   }
 
@@ -332,17 +385,25 @@ export function Onboarding({ initiales }: { initiales: Reponses }) {
     demarrer(async () => {
       // On rattrape d'abord ce qui n'était pas passé en chemin.
       if (Object.keys(aRejouer.current).length > 0) {
-        const rattrapage = await sauverEtape(aRejouer.current).catch(() => ({ erreur: "reseau" }));
-        if (rattrapage.erreur) {
+        const ok = await ecrireReponses(aRejouer.current).catch(() => false);
+        if (!ok) {
           setErreur(
-            "Tes réponses n'ont pas pu être enregistrées. Vérifie ta connexion, puis relance la création du programme.",
+            "Tes réponses n'ont pas pu être enregistrées. Ce navigateur refuse le stockage — vérifie que tu n'es pas en navigation privée.",
           );
           return;
         }
         aRejouer.current = {};
       }
-      const resultat = await terminerOnboarding(cleProgramme);
-      if (resultat?.erreur) setErreur(resultat.erreur);
+
+      const profil = await depot().enregistrerProfil({ onboarding_termine: true });
+      if (cleProgramme) {
+        const resultat = await creerProgramme(cleProgramme, profil);
+        if (resultat.erreur) {
+          setErreur(resultat.erreur);
+          return;
+        }
+      }
+      routeur.replace("/tableau-de-bord");
     });
   }
 

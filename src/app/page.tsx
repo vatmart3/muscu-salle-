@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 /**
  * Accueil public. Une page, courte, plein écran. Pas de landing marketing :
- * les gens qui arrivent ici ont déjà la clé de la salle dans la poche.
+ * il n'y a rien à vendre et aucun compte à créer.
  */
 export default function Accueil() {
   return (
@@ -34,16 +34,17 @@ export default function Accueil() {
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <BoutonLien href="/inscription" taille="pouce" pleineLargeur className="sm:w-auto">
-              Créer mon compte
+            <BoutonLien href="/bienvenue" taille="pouce" pleineLargeur className="sm:w-auto">
+              Ouvrir mon carnet
             </BoutonLien>
-            <BoutonLien href="/connexion" ton="secondaire" taille="pouce" pleineLargeur className="sm:w-auto">
-              Me connecter
+            <BoutonLien href="/tableau-de-bord" ton="secondaire" taille="pouce" pleineLargeur className="sm:w-auto">
+              Reprendre où j&apos;en suis
             </BoutonLien>
           </div>
 
           <p className="text-mention text-texte-tenu">
-            L&apos;accès demande le code de la salle. Demande-le à qui t&apos;a ouvert la porte.
+            Pas de compte, pas de mot de passe. Tes séances sont écrites dans ce navigateur et n&apos;en sortent
+            jamais — pense à télécharger une sauvegarde de temps en temps.
           </p>
         </div>
       </main>

@@ -1,12 +1,15 @@
 import type { NextConfig } from "next";
 
+// Rien ne sort de l'appareil : `connect-src 'self'` suffit, et une image ne
+// vient que du site, d'un `data:` ou d'un `blob:` (les photos de progression,
+// lues depuis IndexedDB).
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "connect-src 'self'",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",

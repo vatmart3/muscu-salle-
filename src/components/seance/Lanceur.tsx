@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { demarrerSeance, abandonnerSeance, type ChargeSeance } from "@/actions/seance";
+import { useRouter } from "next/navigation";
+import { demarrerSeance, abandonnerSeance, type ChargeSeance } from "@/lib/donnees/seance";
 import { useSeance } from "@/stores/seance";
 import { Bouton } from "@/components/ui/Bouton";
 import { Surface, TitreSection } from "@/components/ui/Surface";
@@ -31,6 +32,7 @@ export function Lanceur({
 }) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
+  const routeur = useRouter();
   const reprendre = useSeance((e) => e.reprendre);
   const demarrerLocal = useSeance((e) => e.demarrer);
   const vider = useSeance((e) => e.vider);
@@ -50,12 +52,9 @@ export function Lanceur({
   function clore(id: string) {
     setErreur(null);
     demarrer(async () => {
-      const resultat = await abandonnerSeance(id);
-      if (resultat.erreur) {
-        setErreur(resultat.erreur);
-        return;
-      }
+      await abandonnerSeance(id);
       vider();
+      routeur.refresh();
     });
   }
 

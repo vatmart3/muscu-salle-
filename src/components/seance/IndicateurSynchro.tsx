@@ -1,21 +1,20 @@
 "use client";
 
-import type { EtatSynchro } from "@/hooks/useSynchro";
+import type { EtatPersistance } from "@/hooks/usePersistance";
 import { cn } from "@/lib/cn";
 
-const LIBELLES: Record<EtatSynchro, string> = {
-  "a-jour": "Enregistré",
-  "en-attente": "Enregistrement…",
-  "hors-ligne": "Hors-ligne, tout est gardé",
-  erreur: "Pas encore enregistré",
+const LIBELLES: Record<EtatPersistance, string> = {
+  "a-jour": "Enregistré sur ce téléphone",
+  "en-cours": "Enregistrement…",
+  refuse: "Ce navigateur refuse le stockage",
 };
 
 /**
- * État de synchronisation, discret par conception : un point et un mot.
+ * État d'enregistrement, discret par conception : un point et un mot.
  * Il ne prend de la place que quand quelque chose ne va pas.
  */
-export function IndicateurSynchro({ etat, onForcer }: { etat: EtatSynchro; onForcer?: () => void }) {
-  const inquiet = etat === "hors-ligne" || etat === "erreur";
+export function IndicateurSynchro({ etat, onForcer }: { etat: EtatPersistance; onForcer?: () => void }) {
+  const inquiet = etat === "refuse";
   return (
     <button
       type="button"
@@ -32,7 +31,7 @@ export function IndicateurSynchro({ etat, onForcer }: { etat: EtatSynchro; onFor
         className={cn(
           "h-1.5 w-1.5 rounded-pastille",
           etat === "a-jour" && "bg-texte-tenu",
-          etat === "en-attente" && "bg-accent",
+          etat === "en-cours" && "bg-accent",
           inquiet && "bg-inverse-texte",
         )}
       />

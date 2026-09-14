@@ -1,40 +1,48 @@
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { clientServeur } from "@/lib/supabase/server";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Onboarding, type Reponses } from "@/components/onboarding/Onboarding";
+import { Squelette } from "@/components/ui/Etats";
+import { depot } from "@/lib/donnees/depot";
+import { useDonnees } from "@/lib/donnees/hooks";
+import { demanderPersistance } from "@/lib/donnees/idb";
 
-export const metadata: Metadata = { title: "Bienvenue" };
+export default function PageBienvenue() {
+  const routeur = useRouter();
+  const { donnees, chargement } = useDonnees(async () => {
+    const [profil, mesures] = await Promise.all([depot().profil(), depot().mesures()]);
+    return { profil, poids: mesures[0]?.poids_kg ?? undefined };
+  }, []);
 
-export default async function PageBienvenue() {
-  const supabase = await clientServeur();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/connexion");
+  // Les données vivent dans ce navigateur : on demande au système de ne pas
+  // les effacer sous pression disque. C'est le bon moment — l'utilisateur
+  // vient de décider d'utiliser l'app.
+  useEffect(() => {
+    void demanderPersistance();
+  }, []);
 
-  const { data: profil } = await supabase
-    .from("profiles")
-    .select(
-      "prenom, sexe, date_naissance, taille_cm, objectif, niveau, jours_par_semaine, materiel_dispo, blessures, unite, onboarding_termine",
-    )
-    .eq("id", auth.user.id)
-    .single();
+  useEffect(() => {
+    if (donnees?.profil?.onboarding_termine) routeur.replace("/tableau-de-bord");
+  }, [donnees, routeur]);
 
-  if (profil?.onboarding_termine) redirect("/tableau-de-bord");
+  if (chargement) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-5 pt-16">
+        <Squelette className="h-8 w-52" />
+        <Squelette className="h-5 w-full" />
+        <Squelette rayon="bloc" className="h-40 w-full" />
+      </main>
+    );
+  }
 
-  // Le poids déjà saisi est repris : on peut fermer l'app et revenir.
-  const { data: mesure } = await supabase
-    .from("mesures")
-    .select("poids_kg")
-    .eq("user_id", auth.user.id)
-    .order("date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
+  const profil = donnees?.profil;
   const initiales: Reponses = {
-    prenom: profil?.prenom ?? "",
+    prenom: profil?.prenom || "",
     sexe: profil?.sexe ?? undefined,
     date_naissance: profil?.date_naissance ?? undefined,
     taille_cm: profil?.taille_cm ?? undefined,
-    poids_kg: mesure?.poids_kg ?? undefined,
+    poids_kg: donnees?.poids,
     objectif: profil?.objectif ?? undefined,
     niveau: profil?.niveau ?? undefined,
     jours_par_semaine: profil?.jours_par_semaine ?? undefined,

@@ -25,5 +25,5 @@ export default function Apercu() {
     setPret(true);
   }, []);
   if (!pret) return null;
-  return <EcranBilan unite="kg" />;
+  return <EcranBilan />;
 }

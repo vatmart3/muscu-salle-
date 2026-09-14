@@ -1,60 +1,20 @@
 import { z } from "zod";
 import { GROUPES, MATERIEL } from "./types";
 
-/**
- * Schémas de validation. Écrits une fois, utilisés des deux côtés :
- * dans le formulaire pour le retour immédiat, dans la Server Action pour la
- * sécurité. Les messages sont ceux que lit l'utilisateur — ils disent quoi
- * corriger, pas ce qui est invalide.
- */
-
-export const motDePasse = z
-  .string()
-  .min(8, "8 caractères minimum.")
-  .max(72, "72 caractères maximum.");
-
-export const email = z
-  .string()
-  .trim()
-  .min(1, "Il faut une adresse e-mail.")
-  .email("Cette adresse ne ressemble pas à une adresse e-mail.")
-  .transform((v) => v.toLowerCase());
-
 export const prenom = z
   .string()
   .trim()
   .min(1, "Il faut un prénom.")
   .max(40, "40 caractères maximum.");
 
-export const codeAcces = z
-  .string()
-  .trim()
-  .min(4, "Le code de la salle fait au moins 4 caractères.")
-  .max(32, "32 caractères maximum.")
-  .transform((v) => v.toUpperCase());
-
-export const schemaInscription = z.object({
-  prenom,
-  email,
-  motDePasse,
-  codeAcces,
-});
-export type DonneesInscription = z.infer<typeof schemaInscription>;
-
-export const schemaConnexion = z.object({
-  email,
-  motDePasse: z.string().min(1, "Il faut un mot de passe."),
-});
-export type DonneesConnexion = z.infer<typeof schemaConnexion>;
-
-export const schemaEmailSeul = z.object({ email });
-
-export const schemaNouveauMotDePasse = z
-  .object({ motDePasse, confirmation: z.string() })
-  .refine((d) => d.motDePasse === d.confirmation, {
-    message: "Les deux mots de passe ne sont pas identiques.",
-    path: ["confirmation"],
-  });
+/**
+ * Schémas de validation.
+ *
+ * Ils servaient à valider des deux côtés d'un réseau ; depuis le passage au
+ * stockage local il n'y a plus qu'un côté, mais ils restent le seul endroit qui
+ * dit ce qu'est une valeur acceptable — et les messages restent écrits pour
+ * être lus par quelqu'un : ils disent quoi corriger, pas ce qui est invalide.
+ */
 
 // ───────────────────────────── Onboarding ─────────────────────────────
 

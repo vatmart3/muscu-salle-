@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSeance, exerciceActif, serieEnCours, tonnageSeance } from "@/stores/seance";
 import { useChrono } from "@/hooks/useChrono";
 import { useWakeLock } from "@/hooks/useWakeLock";
-import { useSynchro } from "@/hooks/useSynchro";
+import { usePersistance } from "@/hooks/usePersistance";
 import { Bouton } from "@/components/ui/Bouton";
 import { Feuille } from "@/components/ui/Feuille";
 import { ChampCharge } from "./ChampCharge";
@@ -38,7 +38,7 @@ export function EcranSeance({
 }) {
   const routeur = useRouter();
   const etat = useSeance();
-  const { etat: etatSynchro, forcer } = useSynchro();
+  const { etat: etatSynchro, forcer } = usePersistance();
   const mouvementReduit = useReducedMotion();
 
   const [records, setRecords] = useState<RecordTombe[] | null>(null);
@@ -175,7 +175,6 @@ export function EcranSeance({
 
       <AjoutExercice
         ouverte={bibliotheque}
-        seanceId={seance.id}
         ordre={etat.exercices.length}
         onFermer={() => setBibliotheque(false)}
         onAjoute={etat.ajouterExercice}

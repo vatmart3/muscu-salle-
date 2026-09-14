@@ -1,8 +1,14 @@
 # FONTE — contexte de travail
 
 Application web de suivi de musculation pour les membres d'une salle privée
-(garage aménagé). Chacun crée son compte avec le code de la salle, remplit un
-onboarding, lance ses séances depuis son téléphone et suit sa progression.
+(garage aménagé). On ouvre le site, on remplit un onboarding, on lance ses
+séances depuis son téléphone et on suit sa progression.
+
+**Les données ne quittent pas l'appareil.** Pas de compte, pas de mot de passe,
+pas de serveur : tout est écrit dans le navigateur (IndexedDB), derrière une
+seule couche d'accès — `src/lib/donnees/depot.ts`. Le schéma Postgres, ses
+policies RLS et leurs tests restent dans `supabase/` : c'est le chemin de retour
+documenté vers une base partagée, pas un service en fonctionnement.
 
 **Contrainte n°1 de toute décision d'interface : l'app s'utilise d'une main, en
 sueur, le téléphone posé sur le banc.** Si un arbitrage se présente, c'est cette
@@ -20,15 +26,15 @@ phrase qui tranche.
 | `npm run typecheck` | TypeScript strict, sans émission |
 | `npm run lint` | ESLint (config Next) |
 | `npm run test` | Vitest — calculs du domaine |
-| `npm run e2e` | Playwright — parcours critique |
+| `npm run e2e` | Playwright — parcours critique, sans rien à démarrer |
 | `npm run verif` | typecheck + lint + test, à lancer avant chaque commit |
-| `npm run db:verif` | Rejoue schéma + tests RLS sur un Postgres nu, sans Docker |
-| `npm run db:reset` | Rejoue toutes les migrations sur la base locale Supabase |
-| `npm run db:push` | Applique les migrations sur le projet distant |
+| `npm run db:verif` | Rejoue schéma + tests RLS sur un Postgres nu — garde le chemin de retour vivant |
 | `python3 scripts/generer-icones.py` | Régénère les icônes PWA depuis la marque |
+| `python3 scripts/generer-exercices-ts.py` | Régénère `lib/exercices.ts` **et** le seed SQL depuis la même source |
 | `node scripts/capture.mjs <url> <sortie.png> [largeur] [hauteur]` | Capture d'écran de contrôle |
 
-Supabase en local : `supabase start` puis `supabase db reset`.
+Aucune variable d'environnement, aucun service à lancer : `npm install` puis
+`npm run dev` suffisent.
 
 > **Piège :** `next dev` et `next build` partagent `.next`. Construire pendant
 > qu'un serveur de développement tourne produit un build corrompu qui répond
@@ -43,38 +49,48 @@ Supabase en local : `supabase start` puis `supabase db reset`.
 
 ```
 src/
-  app/                 Routes App Router. Server Components par défaut.
-    (public)/          Accueil, inscription, connexion — non authentifié
-    (app)/             Tout ce qui exige une session
+  app/                 Routes App Router.
+    (app)/             Coquilles serveur : elles montent un composant client
+    page.tsx           Accueil public
     design/            Page de démonstration du système de design
   components/
     ui/                Primitives : Anneau, Bouton, Champ, Surface, Chiffre…
     seance/            Écran de séance en direct
-    3d/                Les trois scènes React Three Fiber
+    trois-d/           Les deux scènes React Three Fiber restantes
     graphes/           Graphiques stylés main (Recharts habillé)
-  lib/                 brand, fonts, calculs, format, types, schémas Zod, supabase/
-  stores/              Zustand — état de la séance en cours, file de synchro
+  lib/
+    donnees/           idb · modeles · depot · hooks · seance · programmes · export
+    calculs.ts         1RM, tonnage, records, moyennes — la seule source de vérité
+    exercices.ts       Les 131 exercices, générés depuis la même source que le seed
+    brand, fonts, format, types, schemas (Zod)
+  stores/              Zustand — état de la séance en cours
   fonts/               Fichiers woff2 servis en local
-supabase/
-  migrations/          Schéma versionné. Jamais de modification manuelle non tracée.
-  templates/           E-mails transactionnels aux couleurs de l'app
+supabase/              Chemin de retour : migrations/ · tests/ · templates/
 scripts/               Outils de développement
 ```
 
 ### Règles de structure
 
-- **Server Components par défaut.** `"use client"` seulement quand il y a un
-  état, un événement, une API navigateur ou une animation pilotée.
-- Les accès Supabase côté serveur passent par `lib/supabase/server.ts`, côté
-  navigateur par `lib/supabase/client.ts`. Jamais `createClient` en ligne.
-- `SUPABASE_SERVICE_ROLE_KEY` ne quitte jamais le serveur. Aucun import de
-  `lib/supabase/admin.ts` depuis un fichier portant `"use client"`.
+- **Une seule porte vers les données : `lib/donnees/depot.ts`.** Aucun écran
+  n'ouvre IndexedDB, n'appelle `lire`/`ecrire` ni ne connaît le nom d'un
+  magasin. C'est ce qui rend le rebranchement d'une base possible sans toucher
+  un composant : on écrit un second dépôt, on change une ligne dans `depot()`.
+- Les agrégats (`volumeParGroupe`, `tonnageHebdomadaire`, `progressionExercice`…)
+  vivent dans le dépôt, pas dans les composants : ce sont les requêtes SQL de
+  demain.
+- Les pages de `(app)/` sont des **coquilles serveur minces** : les données
+  étant dans le navigateur, la lecture se fait dans un composant client via
+  `useDonnees()`. On garde donc le rendu serveur pour la structure, jamais pour
+  les données.
 - Toute validation de formulaire est écrite une fois dans `lib/schemas.ts` avec
-  Zod, et utilisée **des deux côtés** (client et Server Action).
+  Zod, et appliquée avant écriture dans le dépôt. Le dépôt ne fait pas
+  confiance à son appelant.
 - Toute copy française passe par `typo()` de `lib/format.ts` (espace fine
   insécable avant `? ! ; : »`). Quand le texte est mêlé à du JSX, écrire
   l'espace en échappement visible : `{"Volume\u202f:"}`.
-- Toute migration qui touche une colonne se reporte dans `lib/types-db.ts`.
+- Les documents locaux sont typés dans `lib/donnees/modeles.ts`. Toute forme
+  qui change se reporte **aussi** dans la migration SQL correspondante : les
+  deux descriptions du même carnet ne doivent pas diverger en silence.
 - Les calculs du domaine (1RM, tonnage, records, moyennes) vivent dans
   `lib/calculs.ts`. Aucun composant ne recalcule à la main.
 
@@ -135,8 +151,9 @@ d'exclamation dans l'interface, sauf s'il porte une vraie information.
   c'est la langue du produit. Les API du framework restent en anglais.
 - Commits conventionnels : `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
 - Chaque arbitrage technique ou visuel : une ligne datée dans `DECISIONS.md`.
-- Migrations SQL numérotées et immuables une fois poussées : on corrige avec une
-  nouvelle migration, jamais en éditant l'ancienne.
+- Migrations SQL numérotées et immuables : on corrige avec une nouvelle
+  migration, jamais en éditant l'ancienne. Elles ne tournent aujourd'hui que
+  dans `npm run db:verif`, et c'est justement ce qui les garde exactes.
 
 ---
 

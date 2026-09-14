@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { creerModele, dupliquerModele, importerParCode, reordonnerModeles, supprimerModele } from "@/actions/programmes";
+import { creerModele, dupliquerModele, reordonnerModeles, supprimerModele } from "@/lib/donnees/programmes";
 import { Bouton } from "@/components/ui/Bouton";
 import { Champ } from "@/components/ui/Champ";
 import { Surface, TitreSection } from "@/components/ui/Surface";
@@ -13,7 +13,6 @@ export type ProgrammeResume = {
   id: string;
   nom: string;
   description: string | null;
-  code_partage: string | null;
   exercices: string[];
 };
 
@@ -23,14 +22,18 @@ export type ProgrammeResume = {
  * clavier et au lecteur d'écran — trois choses qu'un glisser-déposer maison ne
  * sait pas faire. Voir DECISIONS.md.
  */
-export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] }) {
+export function ListeProgrammes({
+  programmes,
+  onChangement,
+}: {
+  programmes: ProgrammeResume[];
+  onChangement: () => void;
+}) {
   const [ordre, setOrdre] = useState(programmes.map((p) => p.id));
   const [erreur, setErreur] = useState<string | null>(null);
   const [fait, setFait] = useState<string | null>(null);
   const [nouveau, setNouveau] = useState(false);
   const [nom, setNom] = useState("");
-  const [importOuvert, setImportOuvert] = useState(false);
-  const [code, setCode] = useState("");
   const [enCours, demarrer] = useTransition();
 
   const parId = new Map(programmes.map((p) => [p.id, p]));
@@ -48,16 +51,21 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
     demarrer(async () => {
       const resultat = await reordonnerModeles(copie);
       if (resultat.erreur) setErreur(resultat.erreur);
+      else onChangement();
     });
   }
 
-  function agir(promesse: Promise<{ erreur?: string }>, message?: string) {
+  function agir(action: () => Promise<{ erreur?: string }>, message?: string) {
     setErreur(null);
     setFait(null);
     demarrer(async () => {
-      const resultat = await promesse;
-      if (resultat.erreur) setErreur(resultat.erreur);
-      else if (message) setFait(message);
+      const resultat = await action();
+      if (resultat.erreur) {
+        setErreur(resultat.erreur);
+        return;
+      }
+      if (message) setFait(message);
+      onChangement();
     });
   }
 
@@ -73,19 +81,14 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
       {erreur && <BandeauErreur>{erreur}</BandeauErreur>}
       {fait && <BandeauFait>{fait}</BandeauFait>}
 
-      <div className="flex flex-wrap gap-2">
-        <Bouton taille="pouce" onClick={() => setNouveau(true)}>
-          Créer un programme
-        </Bouton>
-        <Bouton ton="secondaire" taille="pouce" onClick={() => setImportOuvert(true)}>
-          Importer par code
-        </Bouton>
-      </div>
+      <Bouton taille="pouce" className="self-start" onClick={() => setNouveau(true)}>
+        Créer un programme
+      </Bouton>
 
       {liste.length === 0 ? (
         <EtatVide
           titre="Aucun programme"
-          texte="Crée ton premier modèle, ou importe celui d'un autre membre avec son code court."
+          texte="Crée ton premier modèle : ses exercices, séries et repos seront pré-remplis au lancement d'une séance."
           action={<Bouton onClick={() => setNouveau(true)}>Créer un programme</Bouton>}
         />
       ) : (
@@ -98,9 +101,6 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
                     <h2 className="font-affichage text-bloc font-bold">{programme.nom}</h2>
                     {programme.exercices.length > 0 && (
                       <p className="mt-1 text-mention text-texte-doux">{programme.exercices.join(" · ")}</p>
-                    )}
-                    {programme.code_partage && (
-                      <p className="mt-1 text-mention text-texte-tenu">Partagé sous le code {programme.code_partage}</p>
                     )}
                   </Link>
                   <div className="flex shrink-0 flex-col gap-1">
@@ -125,13 +125,17 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Bouton ton="secondaire" taille="compact" onClick={() => agir(dupliquerModele(programme.id), "Programme dupliqué.")}>
+                  <Bouton
+                    ton="secondaire"
+                    taille="compact"
+                    onClick={() => agir(() => dupliquerModele(programme.id), "Programme dupliqué.")}
+                  >
                     Dupliquer
                   </Bouton>
                   <Bouton
                     ton="fantome"
                     taille="compact"
-                    onClick={() => agir(supprimerModele(programme.id), "Programme supprimé.")}
+                    onClick={() => agir(() => supprimerModele(programme.id), "Programme supprimé.")}
                   >
                     Supprimer
                   </Bouton>
@@ -156,7 +160,7 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
             pleineLargeur
             disabled={!nom.trim() || enCours}
             onClick={() => {
-              agir(creerModele(nom), "Programme créé.");
+              agir(() => creerModele(nom), "Programme créé.");
               setNom("");
               setNouveau(false);
             }}
@@ -166,40 +170,11 @@ export function ListeProgrammes({ programmes }: { programmes: ProgrammeResume[] 
         </div>
       </Feuille>
 
-      <Feuille titre="Importer un programme" ouverte={importOuvert} onFermer={() => setImportOuvert(false)}>
-        <div className="flex flex-col gap-4">
-          <p className="text-ui text-texte-doux">
-            Demande son code court à la personne qui a partagé le programme. Six caractères, ni O ni I pour éviter les
-            confusions.
-          </p>
-          <Champ
-            libelle="Code de partage"
-            placeholder="K7M2PX"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            autoCapitalize="characters"
-            spellCheck={false}
-            autoFocus
-          />
-          <Bouton
-            taille="pouce"
-            pleineLargeur
-            disabled={code.trim().length < 4 || enCours}
-            onClick={() => {
-              agir(importerParCode(code), "Programme importé.");
-              setCode("");
-              setImportOuvert(false);
-            }}
-          >
-            Importer
-          </Bouton>
-        </div>
-      </Feuille>
-
       <TitreSection>Comment ça marche</TitreSection>
       <p className="text-mention text-texte-doux">
         Un programme sert de modèle : au lancement d&apos;une séance, ses exercices, séries et repos sont pré-remplis.
-        Tu peux tout changer en cours de route, ça ne modifie pas le modèle.
+        Tu peux tout changer en cours de route, ça ne modifie pas le modèle. Les programmes vivent sur ce téléphone,
+        comme le reste.
       </p>
     </main>
   );

@@ -1,12 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Deux projets :
- *  — `public` : parcours et accessibilité des écrans qui ne demandent pas de
- *    session. Tourne partout, y compris en intégration continue sans Supabase.
- *  — `parcours` : inscription → onboarding → séance → bilan. Exige une base
- *    Supabase joignable (`supabase start`), sinon les tests se déclarent
- *    ignorés plutôt que rouges.
+ * Deux projets, aucune dépendance externe : les données vivent dans le
+ * navigateur, donc chaque test part d'un profil vierge sans rien à démarrer.
+ *  — `public` : écrans non authentifiés et audit d'accessibilité.
+ *  — `parcours` : onboarding → séance → bilan → historique.
  */
 
 const PORT = Number(process.env.PORT ?? 3100);

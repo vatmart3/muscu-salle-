@@ -18,9 +18,9 @@ export default function PageHorsLigne() {
       <div className="flex flex-col gap-3">
         <h1 className="font-affichage text-titre font-bold">Pas de réseau.</h1>
         <p className="text-ui text-texte-doux">
-          {MARQUE.nom} garde ta séance en cours sur le téléphone : les séries que tu valides sont conservées et
-          repartiront dès que la connexion revient. Les pages que tu n&apos;as pas encore ouvertes, elles, ont besoin du
-          réseau.
+          Tes séances, elles, sont là : {MARQUE.nom} écrit tout dans ce navigateur, sans jamais passer par le réseau.
+          Seules les pages que tu n&apos;as encore jamais ouvertes ont besoin d&apos;une connexion, le temps d&apos;être
+          téléchargées une première fois.
         </p>
       </div>
       <div className="flex flex-col gap-3">

@@ -1,13 +1,13 @@
 /**
  * FONTE — service worker.
  *
- * Trois responsabilités, pas une de plus :
- *   1. garder la coquille de l'app et les polices sous la main ;
- *   2. laisser l'écran de séance s'ouvrir sans réseau ;
- *   3. afficher les notifications de relance.
+ * Depuis que les données vivent dans IndexedDB, l'application est hors-ligne
+ * par nature : il n'y a plus rien à synchroniser. Le rôle du worker se réduit
+ * donc à garder la coquille, les polices et les pages déjà visitées, pour que
+ * l'app s'ouvre sans réseau — pas seulement l'écran de séance.
  *
- * Rien n'est mis en cache côté API ni côté Supabase : les données d'un membre
- * n'ont rien à faire dans un cache partagé avec le navigateur.
+ * Il ne met en cache aucune donnée d'entraînement : celles-ci ne passent
+ * jamais par le réseau, elles n'ont donc jamais à passer par un cache.
  */
 
 const VERSION = "fonte-v1";
@@ -50,9 +50,8 @@ self.addEventListener("fetch", (evenement) => {
   if (requete.method !== "GET") return;
 
   const url = new URL(requete.url);
-  // Jamais de cache sur ce qui n'est pas à nous, ni sur les appels de données.
+  // Jamais de cache sur ce qui n'est pas à nous.
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
 
   // Actifs versionnés : immuables, on sert le cache en premier.
   if (estStatique(url)) {
@@ -73,8 +72,8 @@ self.addEventListener("fetch", (evenement) => {
   }
 
   // Navigations : réseau d'abord, cache ensuite, page hors-ligne en dernier.
-  // C'est ce qui permet de rouvrir /seance sans réseau : la page revient du
-  // cache et l'état de la séance est rechargé depuis localStorage.
+  // C'est ce qui permet de rouvrir n'importe quel écran sans réseau : la page
+  // revient du cache et lit ses données dans IndexedDB.
   if (requete.mode === "navigate") {
     evenement.respondWith(
       fetch(requete)
@@ -93,26 +92,6 @@ self.addEventListener("fetch", (evenement) => {
         }),
     );
   }
-});
-
-self.addEventListener("push", (evenement) => {
-  let charge = { titre: "FONTE", corps: "", url: "/tableau-de-bord" };
-  try {
-    if (evenement.data) charge = { ...charge, ...evenement.data.json() };
-  } catch {
-    charge.corps = evenement.data ? evenement.data.text() : "";
-  }
-
-  evenement.waitUntil(
-    self.registration.showNotification(charge.titre, {
-      body: charge.corps,
-      icon: "/icones/icone-192.png",
-      badge: "/icones/icone-192.png",
-      tag: charge.tag || "fonte-relance",
-      data: { url: charge.url },
-      requireInteraction: false,
-    }),
-  );
 });
 
 self.addEventListener("notificationclick", (evenement) => {

@@ -3,10 +3,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { comparaisonSeance, terminerSeance, type Comparaison } from "@/actions/seance";
+import { comparaisonSeance, terminerSeance } from "@/lib/donnees/seance";
+import { depot } from "@/lib/donnees/depot";
+import { useDonnees } from "@/lib/donnees/hooks";
 import { useSeance, nombreSeriesValidees, tonnageSeance } from "@/stores/seance";
-import { useSynchro } from "@/hooks/useSynchro";
-import { useEnLigne } from "@/hooks/useEnLigne";
+import { usePersistance } from "@/hooks/usePersistance";
 import { useChrono } from "@/hooks/useChrono";
 import { Anneau } from "@/components/ui/Anneau";
 import { Bouton } from "@/components/ui/Bouton";
@@ -32,14 +33,18 @@ const RESSENTIS = [
  * Bilan de fin de séance. Un chiffre, une comparaison à soi-même, les records
  * tombés, un ressenti en un tap. Puis on referme.
  */
-export function EcranBilan({ unite }: { unite: Unite }) {
+type Precedente = { id: string; demarree_a: string; volume_total: number; duree_secondes: number | null } | null;
+
+export function EcranBilan() {
   const routeur = useRouter();
   const etat = useSeance();
-  const enLigne = useEnLigne();
-  const { etat: etatSynchro, forcer } = useSynchro();
-  const [comparaison, setComparaison] = useState<Comparaison | null>(null);
+  const { etat: etatPersistance } = usePersistance();
+  const [comparaison, setComparaison] = useState<{ precedente: Precedente } | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
+
+  const { donnees: profil } = useDonnees(() => depot().profil(), []);
+  const unite: Unite = profil?.unite ?? "kg";
 
   const seance = etat.seance;
   const secondes = useChrono(seance?.demarree_a ?? null, Boolean(seance));
@@ -50,9 +55,9 @@ export function EcranBilan({ unite }: { unite: Unite }) {
   );
 
   useEffect(() => {
-    if (!seance || !enLigne) return;
-    void comparaisonSeance(seance.id, seance.nom).then(setComparaison);
-  }, [seance, enLigne]);
+    if (!seance) return;
+    void comparaisonSeance(seance.id, seance.nom).then((precedente) => setComparaison({ precedente }));
+  }, [seance]);
 
   if (!seance) {
     return (
@@ -75,15 +80,16 @@ export function EcranBilan({ unite }: { unite: Unite }) {
 
   function clore() {
     setErreur(null);
-    if (!enLigne) {
-      setErreur("Tu es hors-ligne. La séance reste gardée sur le téléphone : reviens la clôturer dès que le réseau est là.");
-      return;
-    }
     demarrer(async () => {
-      forcer();
-      const resultat = await terminerSeance(seance!.id, seance!.ressenti, seance!.note);
-      if (resultat.erreur) {
-        setErreur(resultat.erreur);
+      try {
+        await terminerSeance({
+          seance: seance!,
+          exercices: etat.exercices.map(({ derniereFois: _d, recordsConnus: _r, ...reste }) => reste),
+        });
+      } catch {
+        setErreur(
+          "La séance n'a pas pu être enregistrée. Ce navigateur refuse le stockage — vérifie que tu n'es pas en navigation privée.",
+        );
         return;
       }
       etat.vider();
@@ -125,9 +131,7 @@ export function EcranBilan({ unite }: { unite: Unite }) {
 
       <section>
         <TitreSection>Par rapport à la dernière fois</TitreSection>
-        {!enLigne ? (
-          <p className="text-ui text-texte-doux">Comparaison indisponible hors-ligne. Elle arrivera à la synchronisation.</p>
-        ) : comparaison === null ? (
+        {comparaison === null ? (
           <Squelette className="h-12 w-full" />
         ) : comparaison.precedente === null ? (
           <p className="text-ui text-texte-doux">
@@ -212,7 +216,11 @@ export function EcranBilan({ unite }: { unite: Unite }) {
           {enCours ? "Clôture…" : "Terminer la séance"}
         </Bouton>
         <p className="text-center text-mention text-texte-tenu">
-          {etatSynchro === "a-jour" ? "Tout est enregistré." : "Enregistrement en cours…"}
+          {etatPersistance === "refuse"
+            ? "Ce navigateur refuse le stockage : la séance ne sera pas conservée."
+            : etatPersistance === "a-jour"
+              ? "Tout est enregistré sur ce téléphone."
+              : "Enregistrement…"}
         </p>
       </div>
     </main>

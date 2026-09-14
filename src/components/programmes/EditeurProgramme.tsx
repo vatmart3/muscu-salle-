@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
-  ajouterAuModele, majModele, majModeleExercice, partagerModele, reordonnerModeleExercices,
-  retirerDuModele, retirerPartage,
-} from "@/actions/programmes";
-import { chercherExercices, type FicheExercice } from "@/actions/seance";
+  ajouterAuModele, majLigneModele, majModele, reordonnerLignesModele, retirerDuModele,
+} from "@/lib/donnees/programmes";
+import { chercher, type FicheExercice } from "@/lib/exercices";
 import { Bouton } from "@/components/ui/Bouton";
 import { Champ, ChampTexte } from "@/components/ui/Champ";
 import { Feuille } from "@/components/ui/Feuille";
@@ -31,20 +30,19 @@ export function EditeurProgramme({
   id,
   nom,
   description,
-  codePartage,
   lignes,
+  onChangement,
 }: {
   id: string;
   nom: string;
   description: string | null;
-  codePartage: string | null;
   lignes: LigneProgramme[];
+  onChangement: () => void;
 }) {
   const [ordre, setOrdre] = useState(lignes.map((l) => l.id));
   const [bibliotheque, setBibliotheque] = useState(false);
   const [resultats, setResultats] = useState<FicheExercice[] | null>(null);
   const [recherche, setRecherche] = useState("");
-  const [code, setCode] = useState(codePartage);
   const [erreur, setErreur] = useState<string | null>(null);
   const [fait, setFait] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
@@ -52,13 +50,17 @@ export function EditeurProgramme({
   const parId = new Map(lignes.map((l) => [l.id, l]));
   const liste = ordre.flatMap((x) => (parId.get(x) ? [parId.get(x)!] : []));
 
-  function agir(promesse: Promise<{ erreur?: string }>, message?: string) {
+  function agir(action: () => Promise<{ erreur?: string }>, message?: string) {
     setErreur(null);
     setFait(null);
     demarrer(async () => {
-      const resultat = await promesse;
-      if (resultat.erreur) setErreur(resultat.erreur);
-      else if (message) setFait(message);
+      const resultat = await action();
+      if (resultat.erreur) {
+        setErreur(resultat.erreur);
+        return;
+      }
+      if (message) setFait(message);
+      onChangement();
     });
   }
 
@@ -71,12 +73,12 @@ export function EditeurProgramme({
     copie[i] = copie[j]!;
     copie[j] = a;
     setOrdre(copie);
-    agir(reordonnerModeleExercices(id, copie));
+    agir(() => reordonnerLignesModele(id, copie));
   }
 
   function ouvrirBibliotheque() {
     setBibliotheque(true);
-    if (resultats === null) void chercherExercices("").then(setResultats);
+    if (resultats === null) setResultats(chercher(""));
   }
 
   return (
@@ -94,7 +96,7 @@ export function EditeurProgramme({
         <Champ
           libelle="Nom du programme"
           defaultValue={nom}
-          onBlur={(e) => e.target.value !== nom && agir(majModele(id, { nom: e.target.value }), "Nom enregistré.")}
+          onBlur={(e) => e.target.value !== nom && agir(() => majModele(id, { nom: e.target.value }), "Nom enregistré.")}
           className="[&_input]:chiffre [&_input]:text-titre"
         />
         <ChampTexte
@@ -103,7 +105,7 @@ export function EditeurProgramme({
           placeholder="Séance haut du corps, dominante poussée."
           onBlur={(e) =>
             e.target.value !== (description ?? "") &&
-            agir(majModele(id, { description: e.target.value }), "Description enregistrée.")
+            agir(() => majModele(id, { description: e.target.value }), "Description enregistrée.")
           }
         />
       </section>
@@ -167,7 +169,7 @@ export function EditeurProgramme({
                       min={1}
                       max={20}
                       onValider={(v) =>
-                        agir(majModeleExercice(ligne.id, id, { ...valeurs(ligne), series_cible: v }), "Enregistré.")
+                        agir(() => majLigneModele(id, ligne.id, { series_cible: v }), "Enregistré.")
                       }
                     />
                     <ChampCible
@@ -176,7 +178,7 @@ export function EditeurProgramme({
                       min={1}
                       max={200}
                       onValider={(v) =>
-                        agir(majModeleExercice(ligne.id, id, { ...valeurs(ligne), reps_cible: v }), "Enregistré.")
+                        agir(() => majLigneModele(id, ligne.id, { reps_cible: v }), "Enregistré.")
                       }
                     />
                     <ChampCible
@@ -186,7 +188,7 @@ export function EditeurProgramme({
                       max={900}
                       pas={15}
                       onValider={(v) =>
-                        agir(majModeleExercice(ligne.id, id, { ...valeurs(ligne), repos_secondes: v }), "Enregistré.")
+                        agir(() => majLigneModele(id, ligne.id, { repos_secondes: v }), "Enregistré.")
                       }
                     />
                   </div>
@@ -195,7 +197,7 @@ export function EditeurProgramme({
                     ton="fantome"
                     taille="compact"
                     className="self-start"
-                    onClick={() => agir(retirerDuModele(ligne.id, id), "Exercice retiré.")}
+                    onClick={() => agir(() => retirerDuModele(id, ligne.id), "Exercice retiré.")}
                   >
                     Retirer de ce programme
                   </Bouton>
@@ -203,54 +205,6 @@ export function EditeurProgramme({
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      <section>
-        <TitreSection>Partage</TitreSection>
-        {code ? (
-          <Surface className="flex flex-col gap-3 p-5">
-            <p className="text-ui text-texte-doux">
-              Donne ce code à un autre membre : il pourra importer une copie du programme. Les séances déjà faites ne
-              sont jamais partagées.
-            </p>
-            <p className="chiffre text-heros tracking-[.08em]">{code}</p>
-            <Bouton
-              ton="secondaire"
-              taille="compact"
-              className="self-start"
-              onClick={() =>
-                demarrer(async () => {
-                  const resultat = await retirerPartage(id);
-                  if (resultat.erreur) setErreur(resultat.erreur);
-                  else setCode(null);
-                })
-              }
-            >
-              Arrêter le partage
-            </Bouton>
-          </Surface>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <p className="text-ui text-texte-doux">
-              Le partage crée un code court. Les autres membres importent une copie ; ton programme reste le tien.
-            </p>
-            <Bouton
-              ton="secondaire"
-              taille="pouce"
-              className="self-start"
-              disabled={enCours}
-              onClick={() =>
-                demarrer(async () => {
-                  const resultat = await partagerModele(id);
-                  if (resultat.erreur) setErreur(resultat.erreur);
-                  else if (resultat.code) setCode(resultat.code);
-                })
-              }
-            >
-              Créer un code de partage
-            </Bouton>
-          </div>
         )}
       </section>
 
@@ -263,7 +217,7 @@ export function EditeurProgramme({
             value={recherche}
             onChange={(e) => {
               setRecherche(e.target.value);
-              void chercherExercices(e.target.value).then(setResultats);
+              setResultats(chercher(e.target.value));
             }}
             autoFocus
           />
@@ -281,7 +235,7 @@ export function EditeurProgramme({
                     type="button"
                     disabled={enCours}
                     onClick={() => {
-                      agir(ajouterAuModele(id, fiche.id), `${fiche.nom} ajouté.`);
+                      agir(() => ajouterAuModele(id, fiche.id), `${fiche.nom} ajouté.`);
                       setBibliotheque(false);
                     }}
                     className="flex w-full min-h-14 items-center gap-3 border-b border-trait py-3 text-left hover:bg-surface"
@@ -304,14 +258,6 @@ export function EditeurProgramme({
   );
 }
 
-function valeurs(ligne: LigneProgramme) {
-  return {
-    series_cible: ligne.series_cible,
-    reps_cible: ligne.reps_cible,
-    repos_secondes: ligne.repos_secondes,
-    notes: ligne.notes,
-  };
-}
 
 function ChampCible({
   libelle,

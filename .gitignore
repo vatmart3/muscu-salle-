@@ -17,3 +17,4 @@ playwright-report/
 playwright/.cache/
 supabase/.temp/
 /lighthouse-report.*
+__pycache__/

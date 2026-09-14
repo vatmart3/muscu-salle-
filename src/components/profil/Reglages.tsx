@@ -1,40 +1,42 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { majReglages, supprimerCompte, type EtatReglages } from "@/actions/profil";
 import { Bouton } from "@/components/ui/Bouton";
 import { Champ, ChampSelect } from "@/components/ui/Champ";
 import { Feuille } from "@/components/ui/Feuille";
 import { Surface, TitreSection } from "@/components/ui/Surface";
 import { BandeauErreur, BandeauFait } from "@/components/ui/Etats";
-import { Relances } from "@/components/pwa/Relances";
-import { LIBELLE_OBJECTIF, type Objectif, type Role, type Unite } from "@/lib/types";
+import { LIBELLE_OBJECTIF, type Objectif } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { depot } from "@/lib/donnees/depot";
+import { demanderPersistance } from "@/lib/donnees/idb";
+import type { ProfilLocal } from "@/lib/donnees/modeles";
+import { construireCsv, construireSauvegarde, telecharger } from "@/lib/donnees/export";
+import { erreursDeChamp, schemaReglages } from "@/lib/schemas";
 
-export type ProfilReglages = {
-  prenom: string;
-  unite: Unite;
-  jours_par_semaine: number;
-  objectif: Objectif | null;
-  theme: "clair" | "sombre";
-  son_timer: boolean;
-  vibration_timer: boolean;
-  classement_visible: boolean;
-  relance_active: boolean;
-  role: Role;
-};
-
-export function Reglages({ profil, email }: { profil: ProfilReglages; email: string }) {
-  const [etat, action, enCours] = useActionState<EtatReglages, FormData>(majReglages, {});
+export function Reglages({
+  profil,
+  occupation,
+  onChangement,
+}: {
+  profil: ProfilLocal;
+  occupation: { utilise: number; quota: number } | null;
+  onChangement: () => void;
+}) {
+  const routeur = useRouter();
+  const [erreurs, setErreurs] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
+  const [fait, setFait] = useState(false);
   const [theme, setTheme] = useState(profil.theme);
   const [suppression, setSuppression] = useState(false);
   const [confirmation, setConfirmation] = useState("");
-  const [erreurSuppression, setErreurSuppression] = useState<string | null>(null);
-  const [enSuppression, demarrer] = useTransition();
+  const [persistant, setPersistant] = useState<boolean | null>(null);
+  const [enCours, demarrer] = useTransition();
 
-  // Le thème s'applique tout de suite : un réglage qui n'a pas d'effet visible
-  // avant rechargement donne l'impression de ne pas avoir été pris en compte.
+  // Le thème s'applique tout de suite : un réglage sans effet visible avant
+  // rechargement donne l'impression de ne pas avoir été pris en compte.
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
@@ -44,20 +46,59 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
     }
   }, [theme]);
 
+  useEffect(() => {
+    void navigator.storage?.persisted?.().then(setPersistant).catch(() => setPersistant(null));
+  }, []);
+
+  function enregistrer(donnees: FormData) {
+    const lu = schemaReglages.safeParse({
+      prenom: donnees.get("prenom"),
+      unite: donnees.get("unite"),
+      jours_par_semaine: donnees.get("jours_par_semaine"),
+      objectif: donnees.get("objectif"),
+      theme: donnees.get("theme"),
+      son_timer: donnees.get("son_timer") === "on",
+      vibration_timer: donnees.get("vibration_timer") === "on",
+      classement_visible: false,
+      relance_active: donnees.get("relance_active") === "on",
+    });
+    if (!lu.success) {
+      setErreurs(erreursDeChamp(lu.error));
+      return;
+    }
+    setErreurs({});
+    setMessage(null);
+    demarrer(async () => {
+      try {
+        const { classement_visible: _c, ...reglages } = lu.data;
+        await depot().enregistrerProfil(reglages);
+        setFait(true);
+        onChangement();
+      } catch {
+        setMessage("Les réglages n'ont pas pu être enregistrés sur ce téléphone.");
+      }
+    });
+  }
+
+  const pourcentage =
+    occupation && occupation.quota > 0 ? Math.round((occupation.utilise / occupation.quota) * 1000) / 10 : null;
+
   return (
-    <main id="contenu" className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pt-securite pb-8">
-      <header className="pt-4">
+    <main id="contenu" className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pt-6 pb-8">
+      <header>
         <h1 className="font-affichage text-titre font-bold">Profil</h1>
-        <p className="mt-1 text-ui text-texte-doux">{email}</p>
+        <p className="mt-1 text-ui text-texte-doux">
+          Tes données vivent dans ce navigateur, pas sur un serveur.
+        </p>
       </header>
 
-      <form action={action} className="flex flex-col gap-6">
-        {etat.message && <BandeauErreur>{etat.message}</BandeauErreur>}
-        {etat.fait && <BandeauFait>Réglages enregistrés.</BandeauFait>}
+      <form action={enregistrer} className="flex flex-col gap-6">
+        {message && <BandeauErreur>{message}</BandeauErreur>}
+        {fait && <BandeauFait>Réglages enregistrés.</BandeauFait>}
 
         <section className="flex flex-col gap-4">
           <TitreSection>Toi</TitreSection>
-          <Champ libelle="Prénom" name="prenom" defaultValue={profil.prenom} erreur={etat.erreurs?.prenom} required />
+          <Champ libelle="Prénom" name="prenom" defaultValue={profil.prenom} erreur={erreurs.prenom} required />
           <ChampSelect libelle="Objectif principal" name="objectif" defaultValue={profil.objectif ?? "masse"}>
             {(Object.keys(LIBELLE_OBJECTIF) as Objectif[]).map((cle) => (
               <option key={cle} value={cle}>
@@ -89,11 +130,10 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
           <Interrupteur nom="vibration_timer" libelle="Vibration en fin de repos" defaut={profil.vibration_timer} />
           <Interrupteur
             nom="relance_active"
-            libelle="Relance après trois jours sans séance"
-            detail="Une notification qui énonce un fait, pas un reproche."
+            libelle="Rappel après trois jours sans séance"
+            detail="Un bandeau à l'ouverture de l'app, qui énonce un fait. Pas de notification poussée : il faudrait un serveur pour ça."
             defaut={profil.relance_active}
           />
-          <Relances actif={profil.relance_active} />
         </section>
 
         <section className="flex flex-col gap-4">
@@ -124,16 +164,6 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
           </div>
         </section>
 
-        <section className="flex flex-col gap-4">
-          <TitreSection>Classement de la salle</TitreSection>
-          <Interrupteur
-            nom="classement_visible"
-            libelle="Figurer au classement"
-            detail="Prénom, nombre de séances et tonnage uniquement. Jamais de mesure corporelle, jamais de photo. Tu peux te retirer à tout moment."
-            defaut={profil.classement_visible}
-          />
-        </section>
-
         <Bouton type="submit" taille="pouce" pleineLargeur disabled={enCours}>
           {enCours ? "Enregistrement…" : "Enregistrer les réglages"}
         </Bouton>
@@ -141,63 +171,98 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
 
       <section className="flex flex-col gap-3">
         <TitreSection>Tes données</TitreSection>
+        <Surface ton="encre" className="flex flex-col gap-3 p-5">
+          <h2 className="font-affichage text-bloc font-bold">Elles ne sont qu&apos;ici</h2>
+          <p className="text-ui text-inverse-doux">
+            Séances, mesures et photos sont écrites dans le stockage de ce navigateur. Rien n&apos;est envoyé
+            ailleurs — et rien ne revient si tu perds le téléphone ou si tu vides les données du site.
+            {persistant === false && " Le navigateur n'a pas encore promis de les conserver."}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Bouton
+              ton="inverse"
+              taille="compact"
+              disabled={enCours}
+              onClick={() =>
+                demarrer(async () => {
+                  telecharger(
+                    await construireSauvegarde(),
+                    `fonte-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`,
+                    "application/json",
+                  );
+                })
+              }
+            >
+              Télécharger une sauvegarde
+            </Bouton>
+            {persistant === false && (
+              <Bouton
+                ton="inverse"
+                taille="compact"
+                onClick={() => demarrer(async () => setPersistant(await demanderPersistance()))}
+              >
+                Demander la conservation
+              </Bouton>
+            )}
+          </div>
+        </Surface>
+
         <Surface className="flex flex-col gap-3 p-5">
           <p className="text-ui text-texte-doux">
-            L&apos;export contient toutes tes séries : date, séance, exercice, charge, répétitions, RPE et records.
+            L&apos;export CSV contient toutes tes séries : date, séance, exercice, charge, répétitions, RPE et
+            records. Il s&apos;ouvre dans un tableur.
           </p>
-          <a
-            href="/api/export"
-            download
-            className="inline-flex min-h-pouce items-center justify-center rounded-pastille border border-trait bg-fond px-6 text-ui font-medium text-texte hover:bg-surface-creuse"
+          <Bouton
+            ton="secondaire"
+            taille="pouce"
+            className="self-start"
+            disabled={enCours}
+            onClick={() =>
+              demarrer(async () => {
+                telecharger(
+                  await construireCsv(),
+                  `fonte-${new Date().toISOString().slice(0, 10)}.csv`,
+                  "text/csv;charset=utf-8",
+                );
+              })
+            }
           >
-            Télécharger mes données en CSV
-          </a>
-        </Surface>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/programmes"
-            className="inline-flex min-h-pouce items-center rounded-pastille px-4 text-ui font-medium text-accent-fort hover:bg-accent-voile"
-          >
-            Mes programmes
-          </Link>
-          <Link
-            href="/classement"
-            className="inline-flex min-h-pouce items-center rounded-pastille px-4 text-ui font-medium text-accent-fort hover:bg-accent-voile"
-          >
-            Classement de la salle
-          </Link>
-          {profil.role === "admin" && (
-            <Link
-              href="/admin"
-              className="inline-flex min-h-pouce items-center rounded-pastille px-4 text-ui font-medium text-accent-fort hover:bg-accent-voile"
-            >
-              Espace admin
-            </Link>
+            Télécharger mes séries en CSV
+          </Bouton>
+          {pourcentage !== null && (
+            <p className="text-mention text-texte-tenu">
+              Place occupée : {(occupation!.utilise / 1_048_576).toFixed(1)} Mo, soit {pourcentage} % de ce que le
+              navigateur accorde.
+            </p>
           )}
-        </div>
+        </Surface>
+
+        <Link
+          href="/programmes"
+          className="inline-flex min-h-pouce items-center self-start rounded-pastille px-4 text-ui font-medium text-accent-fort hover:bg-accent-voile"
+        >
+          Mes programmes
+        </Link>
       </section>
 
       <section className="flex flex-col gap-3">
-        <TitreSection>Compte</TitreSection>
-        <form action="/auth/deconnexion" method="post">
-          <Bouton type="submit" ton="secondaire" taille="pouce">
-            Me déconnecter
-          </Bouton>
-        </form>
+        <TitreSection>Repartir de zéro</TitreSection>
         <Bouton ton="fantome" taille="compact" className="self-start" onClick={() => setSuppression(true)}>
-          Supprimer mon compte
+          Effacer toutes mes données
         </Bouton>
       </section>
 
-      <Feuille titre="Supprimer le compte" ouverte={suppression} onFermer={() => setSuppression(false)}>
+      <Feuille titre="Tout effacer" ouverte={suppression} onFermer={() => setSuppression(false)}>
         <div className="flex flex-col gap-4">
           <p className="text-ui text-texte">
-            Tout part : séances, séries, records, mesures et photos. C&apos;est immédiat et définitif, il n&apos;y a pas
-            de corbeille.
+            Séances, séries, records, mesures, photos et programmes. C&apos;est immédiat et définitif : il n&apos;y a
+            pas de corbeille, et aucune copie ailleurs.
           </p>
-          {erreurSuppression && <BandeauErreur>{erreurSuppression}</BandeauErreur>}
+          <p className="text-mention text-texte-doux">
+            Télécharge une sauvegarde avant, si tu veux pouvoir regarder en arrière.
+          </p>
           <Champ
-            libelle="Écris SUPPRIMER pour confirmer"
+            libelle="Écris EFFACER pour confirmer"
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
             autoCapitalize="characters"
@@ -206,15 +271,20 @@ export function Reglages({ profil, email }: { profil: ProfilReglages; email: str
             ton="inverse"
             taille="pouce"
             pleineLargeur
-            disabled={enSuppression || confirmation.trim().toUpperCase() !== "SUPPRIMER"}
+            disabled={enCours || confirmation.trim().toUpperCase() !== "EFFACER"}
             onClick={() =>
               demarrer(async () => {
-                const resultat = await supprimerCompte(confirmation);
-                if (resultat?.erreur) setErreurSuppression(resultat.erreur);
+                await depot().toutEffacer();
+                try {
+                  localStorage.removeItem("fonte:seance");
+                } catch {
+                  // Rien à faire : le magasin de séance sera vide au prochain chargement.
+                }
+                routeur.replace("/bienvenue");
               })
             }
           >
-            {enSuppression ? "Suppression…" : "Supprimer définitivement"}
+            Effacer définitivement
           </Bouton>
         </div>
       </Feuille>

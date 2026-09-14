@@ -3,15 +3,13 @@ import AxeBuilder from "@axe-core/playwright";
 
 /**
  * Écrans publics : ils doivent s'afficher et passer l'audit d'accessibilité
- * sans session Supabase. C'est le filet qui tourne partout.
+ * sans aucune donnée en base. C'est le filet qui tourne partout.
  */
 
 const ECRANS = [
   { chemin: "/", titre: "Le carnet de la salle." },
-  { chemin: "/inscription", titre: "Crée ton compte." },
-  { chemin: "/connexion", titre: "Te revoilà." },
-  { chemin: "/mot-de-passe-oublie", titre: "Réinitialiser." },
   { chemin: "/hors-ligne", titre: "Pas de réseau." },
+  { chemin: "/design", titre: "FONTE" },
 ];
 
 for (const { chemin, titre } of ECRANS) {
@@ -29,32 +27,6 @@ for (const { chemin, titre } of ECRANS) {
     expect(resultat.violations.map((v) => `${v.id} — ${v.nodes.length} nœud(s)`)).toEqual([]);
   });
 }
-
-test("l'inscription refuse un formulaire vide sans recharger la page", async ({ page }) => {
-  await page.goto("/inscription");
-  await page.waitForLoadState("networkidle");
-  await page.getByRole("button", { name: "Créer mon compte" }).click();
-  // Les champs sont requis : le navigateur bloque l'envoi, on reste sur place.
-  await expect(page.getByRole("heading", { name: /Crée ton compte/ })).toBeVisible();
-});
-
-test("le lien magique est proposé en secours sur la connexion", async ({ page }) => {
-  await page.goto("/connexion");
-  const secours = page.getByRole("button", { name: "Recevoir un lien de connexion" });
-  const titre = page.getByRole("heading", { name: /Connexion par lien/ });
-
-  /*
-   * Le basculement est piloté par React. Un clic qui arrive avant la fin de
-   * l'hydratation part dans le vide — et `networkidle` ne garantit pas
-   * l'hydratation. On réessaie donc jusqu'à ce que le clic prenne, ce qui est
-   * exactement ce que `toPass` sait faire.
-   */
-  await expect(async () => {
-    await secours.click();
-    await expect(titre).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 15_000 });
-  await expect(page.getByText(/Le lien ne crée pas de compte/)).toBeVisible();
-});
 
 test("la navigation au clavier atteint le contenu par le lien d'évitement", async ({ page }) => {
   await page.goto("/");

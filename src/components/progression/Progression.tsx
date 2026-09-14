@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { progressionExercice } from "@/actions/progression";
+import { progressionExercice } from "@/lib/donnees/depot";
 import dynamic from "next/dynamic";
 import type { PointProgression } from "@/components/graphes/CourbeProgression";
 import { PileDeDisques, type SemaineTonnage } from "@/components/graphes/PileDeDisques";

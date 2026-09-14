@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
-import { enregistrerMesure, enregistrerPhoto, supprimerPhoto, type EtatMesure } from "@/actions/corps";
+import { useMemo, useState, useTransition } from "react";
+import { depot, identifiant } from "@/lib/donnees/depot";
+import type { MesureEnregistree } from "@/lib/donnees/modeles";
+import { erreursDeChamp, schemaMesure } from "@/lib/schemas";
 import dynamic from "next/dynamic";
 import { Comparateur, type PhotoComparee } from "./Comparateur";
 import { Bouton } from "@/components/ui/Bouton";
@@ -14,19 +16,9 @@ import { cleJour, jourComplet, jourMois, nombre } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { Angle, Unite } from "@/lib/types";
 
-export type MesureLigne = {
-  id: string;
-  date: string;
-  poids_kg: number | null;
-  masse_grasse: number | null;
-  tour_bras: number | null;
-  tour_poitrine: number | null;
-  tour_taille: number | null;
-  tour_cuisse: number | null;
-  note: string | null;
-};
-
-export type PhotoLigne = { id: string; date: string; angle: Angle; storage_path: string; url: string };
+export type MesureLigne = MesureEnregistree;
+export type PhotoLigne = { id: string; date: string; angle: Angle; url: string };
+type EtatMesure = { erreurs?: Record<string, string>; message?: string; fait?: boolean };
 
 /** Même raison que sur la progression : Recharts se charge à la demande. */
 const CourbePoids = dynamic(() => import("@/components/graphes/CourbePoids").then((m) => m.CourbePoids), {
@@ -49,14 +41,53 @@ export function SuiviCorporel({
   mesures,
   photos,
   unite,
-  membreId,
+  onChangement,
 }: {
   mesures: MesureLigne[];
   photos: PhotoLigne[];
   unite: Unite;
-  membreId: string;
+  /** Prévient la page qu'il faut relire le dépôt. */
+  onChangement: () => void;
 }) {
-  const [etat, action, enCours] = useActionState<EtatMesure, FormData>(enregistrerMesure, {});
+  const [etat, setEtat] = useState<EtatMesure>({});
+  const [enCours, demarrerMesure] = useTransition();
+
+  /**
+   * La validation Zod est la même que celle qui tournait côté serveur. Elle
+   * n'a pas déménagé : elle vit dans `lib/schemas.ts` et sert ici de garde-fou
+   * de saisie — un champ hors bornes n'a aucune raison d'entrer en base, même
+   * locale.
+   */
+  function soumettre(donnees: FormData) {
+    const brut = Object.fromEntries(donnees.entries());
+    const nettoye = Object.fromEntries(
+      Object.entries(brut).map(([cle, valeur]) => [cle, valeur === "" ? undefined : valeur]),
+    );
+    const lu = schemaMesure.safeParse(nettoye);
+    if (!lu.success) {
+      setEtat({ erreurs: erreursDeChamp(lu.error) });
+      return;
+    }
+    const { note, date, ...reste } = lu.data;
+    demarrerMesure(async () => {
+      try {
+        await depot().enregistrerMesure({
+          date,
+          poids_kg: reste.poids_kg ?? null,
+          masse_grasse: reste.masse_grasse ?? null,
+          tour_bras: reste.tour_bras ?? null,
+          tour_poitrine: reste.tour_poitrine ?? null,
+          tour_taille: reste.tour_taille ?? null,
+          tour_cuisse: reste.tour_cuisse ?? null,
+          note: note || null,
+        });
+        setEtat({ fait: true });
+        onChangement();
+      } catch {
+        setEtat({ message: "La mesure n'a pas pu être enregistrée sur ce téléphone." });
+      }
+    });
+  }
   const [angle, setAngle] = useState<Angle>("face");
   const [avantId, setAvantId] = useState<string | null>(null);
   const [apresId, setApresId] = useState<string | null>(null);
@@ -87,27 +118,29 @@ export function SuiviCorporel({
   const avant = photosAngle.find((p) => p.id === avantId) ?? photosAngle[photosAngle.length - 1];
   const apres = photosAngle.find((p) => p.id === apresId) ?? photosAngle[0];
 
+  /**
+   * La photo reste sur le téléphone : elle est stockée telle quelle dans
+   * IndexedDB, sans transiter par un serveur. C'est ce qui rend la promesse de
+   * confidentialité littérale plutôt que contractuelle.
+   */
   async function televerser(fichier: File) {
     setErreurPhoto(null);
-    const extension = fichier.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const date = cleJour(new Date());
-    const chemin = `${membreId}/${angle}/${date}-${crypto.randomUUID()}.${extension}`;
-
-    // Import différé : le client Supabase navigateur pèse une soixantaine de
-    // kilo-octets et ne sert qu'au moment où une photo part réellement.
-    const { clientNavigateur } = await import("@/lib/supabase/client");
-    const supabase = clientNavigateur();
-    const { error } = await supabase.storage.from("photos-progres").upload(chemin, fichier, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: fichier.type || undefined,
-    });
-    if (error) {
-      setErreurPhoto("Le dépôt a échoué. Vérifie le format (JPEG, PNG ou WebP) et la taille (8 Mo maximum).");
+    if (fichier.size > 8 * 1024 * 1024) {
+      setErreurPhoto("Photo trop lourde : 8 Mo maximum. Réduis-la avant de la déposer.");
       return;
     }
-    const resultat = await enregistrerPhoto({ chemin, angle, date });
-    if (resultat.erreur) setErreurPhoto(resultat.erreur);
+    try {
+      await depot().ajouterPhoto({
+        id: identifiant(),
+        date: cleJour(new Date()),
+        angle,
+        fichier,
+        type_mime: fichier.type || "image/jpeg",
+      });
+      onChangement();
+    } catch {
+      setErreurPhoto("Le dépôt a échoué : ce navigateur refuse le stockage, ou la place manque.");
+    }
   }
 
   return (
@@ -115,8 +148,9 @@ export function SuiviCorporel({
       <header className="pt-4">
         <h1 className="font-affichage text-titre font-bold">Suivi corporel</h1>
         <p className="mt-1 text-ui text-texte-doux">
-          Cette page ne sort jamais de ton compte. Ni les autres membres, ni l&apos;administrateur de la salle n&apos;y
-          ont accès — le classement n&apos;affiche que le prénom et le tonnage.
+          Rien de cette page ne quitte ce téléphone. Les mensurations et les photos sont écrites dans le stockage
+          du navigateur, pas sur un serveur : personne d&apos;autre ne peut y accéder, et elles ne suivent pas si tu
+          te connectes ailleurs.
         </p>
       </header>
 
@@ -142,7 +176,7 @@ export function SuiviCorporel({
 
       <section>
         <TitreSection>Relever aujourd&apos;hui</TitreSection>
-        <form action={action} className="flex flex-col gap-4">
+        <form action={soumettre} className="flex flex-col gap-4">
           {etat.message && <BandeauErreur>{etat.message}</BandeauErreur>}
           {etat.fait && <BandeauFait>Mesure du jour enregistrée.</BandeauFait>}
           <input type="hidden" name="date" value={cleJour(new Date())} />
@@ -285,8 +319,8 @@ export function SuiviCorporel({
                     type="button"
                     onClick={() =>
                       demarrer(async () => {
-                        const resultat = await supprimerPhoto(photo.id, photo.storage_path);
-                        if (resultat.erreur) setErreurPhoto(resultat.erreur);
+                        await depot().supprimerPhoto(photo.id);
+                        onChangement();
                       })
                     }
                     className="min-h-11 rounded-pastille px-3 text-mention font-medium text-texte-doux hover:bg-surface-creuse"
@@ -317,7 +351,7 @@ export function SuiviCorporel({
               </thead>
               <tbody className="chiffre">
                 {mesures.slice(0, 14).map((m) => (
-                  <tr key={m.id} className="border-b border-trait last:border-0">
+                  <tr key={m.date} className="border-b border-trait last:border-0">
                     <th scope="row" className="py-2 pr-3 text-left font-normal text-texte-doux">
                       {jourMois(m.date)}
                     </th>
@@ -333,7 +367,7 @@ export function SuiviCorporel({
             </table>
           </div>
           <p className="mt-3">
-            <Pastille ton="encre">Visible par toi seul</Pastille>
+            <Pastille ton="encre">Sur ce téléphone uniquement</Pastille>
           </p>
         </section>
       )}

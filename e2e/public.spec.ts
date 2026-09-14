@@ -40,13 +40,19 @@ test("l'inscription refuse un formulaire vide sans recharger la page", async ({ 
 
 test("le lien magique est proposé en secours sur la connexion", async ({ page }) => {
   await page.goto("/connexion");
-  // Le basculement est piloté par React : sans attendre l'hydratation, le clic
-  // part dans le vide et le test devient instable.
-  await page.waitForLoadState("networkidle");
   const secours = page.getByRole("button", { name: "Recevoir un lien de connexion" });
-  await expect(secours).toBeVisible();
-  await secours.click();
-  await expect(page.getByRole("heading", { name: /Connexion par lien/ })).toBeVisible();
+  const titre = page.getByRole("heading", { name: /Connexion par lien/ });
+
+  /*
+   * Le basculement est piloté par React. Un clic qui arrive avant la fin de
+   * l'hydratation part dans le vide — et `networkidle` ne garantit pas
+   * l'hydratation. On réessaie donc jusqu'à ce que le clic prenne, ce qui est
+   * exactement ce que `toPass` sait faire.
+   */
+  await expect(async () => {
+    await secours.click();
+    await expect(titre).toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
   await expect(page.getByText(/Le lien ne crée pas de compte/)).toBeVisible();
 });
 

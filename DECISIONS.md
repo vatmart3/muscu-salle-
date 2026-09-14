@@ -12,6 +12,7 @@ Un arbitrage, une ligne, une date. Le plus récent en haut.
 - **2026-09-14** — Une tentative intermédiaire (monter le canevas à `requestIdleCallback`) a été mesurée puis abandonnée : le rappel se déclenche encore dans la fenêtre de mesure, et repousser l'animation à quatre secondes aurait donné l'impression d'un héros cassé.
 - **2026-09-14** — Recharts et le client Supabase navigateur sont chargés à la demande : `/progression` passe de 220 à 114 ko, `/corps` de 184 à 115 ko de premier chargement.
 - **2026-09-14** — Le parcours Playwright complet se **déclare ignoré** quand Supabase n'est pas configuré, plutôt que rouge : un test rouge par absence d'environnement ne dit rien sur le code et finit par être ignoré pour de mauvaises raisons.
+- **2026-09-14** — `scripts/servir.sh` (`npm run servir`) arrête tout serveur, reconstruit, redémarre et **vérifie que le HTML servi référence des fichiers qui existent**. C'est le seul contrôle qui attrape un build désynchronisé — le symptôme (400 sur les fichiers statiques, donc aucun JavaScript, donc d'excellents scores de performance) ressemble trop à un succès.
 - **2026-09-14** — Piège d'outillage consigné dans CLAUDE.md et le README : `next dev` et `next build` partagent `.next`. Construire pendant qu'un serveur tourne produit un build corrompu qui répond 400 sur tous les fichiers statiques — et des scores Lighthouse flatteurs mais faux, puisque le JavaScript ne se charge jamais. Deux mesures ont été invalidées par ce piège avant qu'il soit identifié.
 
 ## 2026-09-14 — Lot 11 : PWA, hors-ligne et relances

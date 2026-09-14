@@ -16,6 +16,7 @@ phrase qui tranche.
 |---|---|
 | `npm run dev` | Serveur de développement sur `http://localhost:3000` |
 | `npm run build` | Build de production |
+| `npm run servir` | Arrête tout, reconstruit, sert, **et vérifie que le build servi n'est pas périmé** |
 | `npm run typecheck` | TypeScript strict, sans émission |
 | `npm run lint` | ESLint (config Next) |
 | `npm run test` | Vitest — calculs du domaine |
@@ -32,8 +33,9 @@ Supabase en local : `supabase start` puis `supabase db reset`.
 > **Piège :** `next dev` et `next build` partagent `.next`. Construire pendant
 > qu'un serveur de développement tourne produit un build corrompu qui répond
 > 400 sur tous les fichiers statiques — et des scores Lighthouse flatteurs mais
-> faux, puisque le JavaScript ne se charge pas. Arrête le serveur avant de
-> construire, et redémarre-le après.
+> faux, puisque le JavaScript ne se charge pas. Utilise `npm run servir` :
+> il arrête tout, reconstruit, redémarre, et refuse de rendre la main si le
+> HTML servi référence un fichier qui n'existe pas.
 
 ---
 

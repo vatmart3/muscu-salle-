@@ -81,6 +81,7 @@ code d'accès initial est `FONTE-2026` ; les suivants se créent depuis `/admin`
 |---|---|
 | `npm run dev` | Serveur de développement |
 | `npm run build` | Build de production |
+| `npm run servir` | Reconstruit, sert, et vérifie que le build servi n'est pas périmé |
 | `npm run verif` | typecheck + lint + tests unitaires |
 | `npm run test` | Vitest — calculs du domaine (28 tests) |
 | `npm run db:verif` | Schéma + RLS sur un Postgres jetable, sans Docker |
@@ -92,8 +93,10 @@ code d'accès initial est `FONTE-2026` ; les suivants se créent depuis `/admin`
 
 > **Attention :** `next dev` et `next build` partagent le dossier `.next`. Lancer
 > un build pendant qu'un serveur de développement tourne produit un build
-> corrompu qui répond 400 sur tous les fichiers statiques. Arrête le serveur
-> avant de construire.
+> corrompu qui répond 400 sur tous les fichiers statiques — et des mesures de
+> performance flatteuses mais fausses, puisque le JavaScript ne se charge
+> jamais. `npm run servir` fait le ménage et refuse de rendre la main si le
+> build servi ne correspond pas au disque.
 
 ---
 

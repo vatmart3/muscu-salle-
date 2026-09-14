@@ -19,7 +19,8 @@
     "db:verif": "bash scripts/verifier-migrations.sh",
     "emails": "python3 scripts/generer-emails.py",
     "e2e:public": "playwright test --project=public",
-    "e2e:parcours": "playwright test --project=parcours"
+    "e2e:parcours": "playwright test --project=parcours",
+    "servir": "bash scripts/servir.sh"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

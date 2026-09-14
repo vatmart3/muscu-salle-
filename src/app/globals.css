@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════
+   FONTE — jetons de design
+   Aucune valeur de couleur, de rayon ou de durée ne doit apparaître en
+   dur dans un composant. Tout passe par ce fichier.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Palette brute (ne pas utiliser directement, sert de référence) ── */
+  --couleur-encre: #0a1628;
+  --couleur-bleu: #0071e3;
+  --couleur-bleu-profond: #0047a8;
+  --couleur-brume: #eef3fa;
+  --couleur-blanc: #ffffff;
+  --couleur-signal: #ff4d3d;
+
+  /* ── Rôles (thème clair) — c'est ce qu'on utilise ── */
+  --color-fond: #ffffff;
+  --color-surface: #eef3fa;
+  --color-surface-creuse: #e2eaf6;
+  --color-texte: #0a1628;
+  --color-texte-doux: rgb(10 22 40 / 0.66);
+  --color-texte-tenu: rgb(10 22 40 / 0.42);
+  --color-trait: rgb(10 22 40 / 0.08);
+  --color-trait-fort: rgb(10 22 40 / 0.22);
+  --color-accent: #0071e3;
+  --color-accent-fort: #0047a8;
+  --color-accent-voile: rgb(0 113 227 / 0.1);
+  --color-signal: #ff4d3d;
+  --color-signal-texte: #c42a1c;
+  --color-signal-voile: rgb(255 77 61 / 0.12);
+  --color-inverse-fond: #0a1628;
+  --color-inverse-texte: #ffffff;
+  --color-inverse-doux: rgb(255 255 255 / 0.62);
+
+  /* ── Familles ── */
+  --font-affichage: var(--police-affichage), "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-ui: var(--police-ui), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* ── Rayons : ils encodent la hiérarchie, ils ne sont pas uniformes ── */
+  --radius-pastille: 999px;
+  --radius-bloc: 28px;
+  --radius-bloc-petit: 18px;
+  --radius-champ: 12px;
+  --radius-nul: 0px;
+
+  /* ── La seule ombre autorisée de toute l'application ── */
+  --shadow-pilule: 0 10px 28px -8px rgb(0 71 168 / 0.5), 0 2px 6px rgb(10 22 40 / 0.14);
+
+  /* ── Temps & courbes : jamais d'ease-in-out par défaut ── */
+  --duree-breve: 150ms;
+  --duree-moyenne: 260ms;
+  --duree-ample: 400ms;
+  --courbe-disque: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --courbe-verrou: cubic-bezier(0.65, 0, 0.35, 1);
+  --courbe-sortie: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Échelle typographique : contrastée, sans crans mous ── */
+  --text-charge: 4.5rem;      /* 72 — la charge en saisie */
+  --text-charge--line-height: 0.86;
+  --text-heros: 3.5rem;       /* 56 — tonnage, 1RM */
+  --text-heros--line-height: 0.9;
+  --text-titre: 1.75rem;      /* 28 — titre d'écran */
+  --text-titre--line-height: 1.08;
+  --text-bloc: 1.25rem;       /* 20 — titre de bloc */
+  --text-bloc--line-height: 1.15;
+  --text-ui: 0.9375rem;       /* 15 — interface */
+  --text-ui--line-height: 1.45;
+  --text-mention: 0.8125rem;  /* 13 — rappels, mentions */
+  --text-mention--line-height: 1.4;
+  --text-etiquette: 0.6875rem;/* 11 — KG, REPS */
+  --text-etiquette--line-height: 1;
+
+  /* ── Trames ── */
+  --spacing-pouce: 3.5rem;    /* 56px : cible tactile confortable */
+  --spacing-rail: 4rem;       /* hauteur du rail d'encre */
+}
+
+/* ═══════════════ Thème sombre (option, jamais par défaut) ═══════════════ */
+@layer base {
+  [data-theme="sombre"] {
+    --color-fond: #060c16;
+    --color-surface: #101b2b;
+    --color-surface-creuse: #18263a;
+    --color-texte: #eef3fa;
+    --color-texte-doux: rgb(238 243 250 / 0.7);
+    --color-texte-tenu: rgb(238 243 250 / 0.45);
+    --color-trait: rgb(238 243 250 / 0.12);
+    --color-trait-fort: rgb(238 243 250 / 0.28);
+    --color-accent: #4da3ff;
+    --color-accent-fort: #8cc4ff;
+    --color-accent-voile: rgb(77 163 255 / 0.16);
+    --color-signal: #ff6b5c;
+    --color-signal-texte: #ff9084;
+    --color-signal-voile: rgb(255 107 92 / 0.18);
+    --color-inverse-fond: #eef3fa;
+    --color-inverse-texte: #0a1628;
+    --color-inverse-doux: rgb(10 22 40 / 0.66);
+    --shadow-pilule: 0 10px 28px -8px rgb(77 163 255 / 0.4), 0 2px 6px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-fond);
+    color: var(--color-texte);
+    font-family: var(--font-ui);
+    font-size: var(--text-ui);
+    line-height: var(--text-ui--line-height);
+    font-weight: 450;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  /* Les chiffres ne dansent jamais. */
+  body,
+  input,
+  button,
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-affichage);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  /* Focus dessiné, jamais l'anneau par défaut du navigateur. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  [data-theme="sombre"] :focus-visible { outline-color: var(--color-accent); }
+
+  ::selection {
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  /* Champs numériques : pas de flèches, clavier natif. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+}
+
+/* ═══════════════ Utilitaires maison ═══════════════ */
+
+@utility chiffre {
+  font-family: var(--font-affichage);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@utility etiquette {
+  font-family: var(--font-ui);
+  font-size: var(--text-etiquette);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-texte-tenu);
+}
+
+/* Marge de sécurité iOS : la barre d'accueil ne mange pas les actions. */
+@utility pb-securite {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+@utility pt-securite {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+/* Le trait 1px : seul séparateur de l'application. */
+@utility trait-h {
+  height: 1px;
+  background: var(--color-trait);
+}
+
+@utility surface-tracee {
+  border: 1px solid var(--color-trait);
+  background: var(--color-surface);
+}
+
+/* Zone de pouce : tout ce qui se tape pendant une séance vit ici. */
+@utility zone-pouce {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* ═══════════════ Mouvement réduit : on coupe tout ═══════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

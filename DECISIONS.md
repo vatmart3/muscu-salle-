@@ -2,6 +2,14 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 8 : progression et carte corporelle
+
+- **2026-09-14** — Le tonnage hebdomadaire est rendu en **pile de disques**, pas en histogramme de barres : c'est la métaphore centrale de l'app prise au mot, un disque vaut une tonne et la semaine se « soupèse » d'un coup d'œil.
+- **2026-09-14** — La silhouette de la carte corporelle est **géométrique**, construite de formes arrondies, pas d'un tracé anatomique : même vocabulaire de forme que le reste de l'app, et lisible à 40 px de large.
+- **2026-09-14** — La teinte musculaire est **relative au maximum personnel de la fenêtre**, pas à une constante : comparer le volume d'un débutant à un barème absolu n'aurait aucun sens. Passage par une racine carrée, sinon un seul gros groupe (les jambes) écrase visuellement tous les autres.
+- **2026-09-14** — Recharts sert de **moteur, pas de style** : axes redessinés, grille verticale supprimée, légende maison, infobulle maison, animation d'entrée désactivée. Les records sont marqués par un disque en `--signal`.
+- **2026-09-14** — Les groupes musculaires de la carte sont des cibles **clavier** (`tabIndex`, Entrée et Espace) : une carte cliquable seulement à la souris est inutilisable au lecteur d'écran.
+
 ## 2026-09-14 — Lot 7 et accueil public
 
 - **2026-09-14** — La **semaine courante ne casse pas la série** tant qu'elle n'est pas finie : elle ne l'allonge que si l'objectif y est déjà atteint. Sans cette règle, tout le monde perdait sa série tous les lundis matin.

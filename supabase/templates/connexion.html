@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ton lien de connexion.</title>
+  </head>
+  <body style="margin:0;padding:0;background:#EEF3FA;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Valable une heure, une seule utilisation.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF3FA;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 style="max-width:520px;background:#ffffff;border-radius:28px;border:1px solid rgba(10,22,40,.08);">
+            <tr>
+              <td style="padding:36px 32px 0 32px;">
+                <div style="width:44px;height:44px;border-radius:999px;border:13px solid #0071E3;box-sizing:border-box;"></div>
+                <p style="margin:20px 0 0 0;font:700 20px/1.1 'Archivo',Helvetica,Arial,sans-serif;letter-spacing:.04em;color:#0A1628;">FONTE</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 0 32px;">
+                <h1 style="margin:0;font:700 26px/1.15 'Archivo',Helvetica,Arial,sans-serif;color:#0A1628;">Ton lien de connexion.</h1>
+                <p style="margin:14px 0 0 0;font:400 15px/1.55 Helvetica,Arial,sans-serif;color:#5C6675;">Clique pour ouvrir ta session, sans mot de passe. Le lien vaut une heure et ne sert qu'une fois.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 32px 0 32px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-radius:999px;background:#0071E3;">
+                      <a href="{{ .SiteURL }}/auth/confirmer?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;suite=/tableau-de-bord"
+                         style="display:inline-block;padding:16px 30px;font:500 16px/1 Helvetica,Arial,sans-serif;color:#ffffff;text-decoration:none;border-radius:999px;">Me connecter</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 32px 36px 32px;">
+                <p style="margin:0;font:400 13px/1.5 Helvetica,Arial,sans-serif;color:#5C6675;">
+                  Le bouton ne fonctionne pas ? Copie ce lien dans ton navigateur :<br />
+                  <span style="color:#0047A8;word-break:break-all;">{{ .SiteURL }}/auth/confirmer?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;suite=/tableau-de-bord</span>
+                </p>
+                <div style="height:1px;background:rgba(10,22,40,.08);margin:22px 0;"></div>
+                <p style="margin:0;font:400 13px/1.5 Helvetica,Arial,sans-serif;color:#5C6675;">Tu n'as rien demandé ? Quelqu'un s'est trompé d'adresse. Ce lien ne donne accès à rien tant qu'il n'est pas cliqué.</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0 0;font:400 12px/1.5 Helvetica,Arial,sans-serif;color:#5C6675;">
+            FONTE — le carnet de la salle.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

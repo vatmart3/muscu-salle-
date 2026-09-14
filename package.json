@@ -16,7 +16,8 @@
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "verif": "npm run typecheck && npm run lint && npm run test",
-    "db:verif": "bash scripts/verifier-migrations.sh"
+    "db:verif": "bash scripts/verifier-migrations.sh",
+    "emails": "python3 scripts/generer-emails.py"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -29,6 +30,7 @@
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "recharts": "^3.10.1",
+    "server-only": "^0.0.1",
     "three": "^0.180.0",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"

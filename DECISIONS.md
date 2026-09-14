@@ -2,6 +2,18 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 3 : authentification
+
+- **2026-09-14** — Les liens d'e-mail visent `/auth/confirmer?token_hash=…` (vérification OTP côté serveur) plutôt que `{{ .ConfirmationURL }}` : la session est posée par notre propre route, dans nos cookies, sans rebond par le domaine Supabase.
+- **2026-09-14** — Le paramètre `suite` des routes d'authentification est filtré : seul un chemin interne est accepté. Sans ce filtre, un lien d'e-mail devient une redirection ouverte.
+- **2026-09-14** — Les erreurs d'Auth sont retraduites en français et appauvries : « User already registered » dirait à un inconnu qui est inscrit à la salle. Même réponse que le compte existe ou non sur la réinitialisation.
+- **2026-09-14** — Le middleware utilise `getUser()` et non `getSession()` : `getSession()` lit un cookie sans le vérifier, c'est suffisant pour afficher un prénom, jamais pour décider d'un accès.
+- **2026-09-14** — Le lien magique est ouvert avec `shouldCreateUser: false` : c'est un secours de connexion, pas une porte d'entrée qui contournerait le code de la salle.
+- **2026-09-14** — Session : jeton d'accès d'une heure, rotation des jetons de rafraîchissement, boîte de 30 jours. C'est le rafraîchissement à chaque requête du middleware qui tient la session ouverte, pas une durée de jeton longue.
+- **2026-09-14** — L'indicateur de robustesse est **quatre segments d'encre**, pas une barre verte : le vert n'existe pas dans cette palette, et le score pèse d'abord la longueur.
+- **2026-09-14** — Les gabarits d'e-mail sont générés (`npm run emails`) en tables et styles en ligne, sans SVG : le disque de la marque est un `div` à bordure arrondie, la seule forme ronde que tous les clients de messagerie rendent correctement.
+- **2026-09-14** — `src/lib/types-db.ts` est écrit à la main plutôt que généré par `supabase gen types` : la génération suppose un projet distant joignable au moment du build. Contrepartie assumée, notée dans CLAUDE.md : toute migration qui touche une colonne se reporte dans ce fichier.
+
 ## 2026-09-14 — Lot 2 : base de données
 
 - **2026-09-14** — Référence d'interface envoyée par le commanditaire (maquette « Gofit ») : on en garde les **mécaniques** d'onboarding (une question par écran, sélecteurs à molette pour taille/poids/âge, Retour et Continuer toujours visibles, récapitulatif de profil) et **rien du look** (violet, fond sombre, photos pleine largeur, connexions sociales). Les règles 1 à 3 du brief priment.

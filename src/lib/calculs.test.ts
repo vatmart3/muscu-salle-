@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import {
   arrondiDecimal, depenseQuotidienne, detecterRecords, epley1rm, imc, incrementerCharge,
   kgVersLb, lbVersKg, metabolismeBase, moyenneMobile, pasCharge, progressionRelative,
-  serieDeSemaines, seriesEffectives, seriesHebdoRecommandees, tonnage, volumeSerie,
+  semainesCompletes, serieDeSemaines, serieEnCours, seriesEffectives, seriesHebdoRecommandees,
+  tonnage, volumeSerie,
 } from "./calculs";
 
 describe("1RM d'Epley", () => {
@@ -200,5 +201,36 @@ describe("charges et unités", () => {
   it("arrondit sans traîner de décimales flottantes", () => {
     expect(arrondiDecimal(0.1 + 0.2, 2)).toBe(0.3);
     expect(arrondiDecimal(133.333333, 2)).toBe(133.33);
+  });
+});
+
+describe("semaines et série", () => {
+  it("comble les semaines sans séance", () => {
+    const lignes = [
+      { semaine: "2026-09-07", seances: 4, tonnage: 12000 },
+      { semaine: "2026-08-24", seances: 3, tonnage: 9000 },
+    ];
+    const completes = semainesCompletes(lignes, 4, new Date("2026-09-10T12:00:00"));
+    expect(completes.map((s) => s.debut)).toEqual(["2026-09-07", "2026-08-31", "2026-08-24", "2026-08-17"]);
+    expect(completes.map((s) => s.seances)).toEqual([4, 0, 3, 0]);
+  });
+
+  it("ne casse pas la série sur une semaine courante encore en cours", () => {
+    const semaines = [
+      { debut: "2026-09-07", seances: 1 }, // semaine courante, pas finie
+      { debut: "2026-08-31", seances: 4 },
+      { debut: "2026-08-24", seances: 4 },
+      { debut: "2026-08-17", seances: 2 },
+    ];
+    expect(serieEnCours(semaines, 4)).toBe(2);
+  });
+
+  it("compte la semaine courante quand l'objectif y est déjà atteint", () => {
+    const semaines = [
+      { debut: "2026-09-07", seances: 4 },
+      { debut: "2026-08-31", seances: 4 },
+      { debut: "2026-08-24", seances: 1 },
+    ];
+    expect(serieEnCours(semaines, 4)).toBe(2);
   });
 });

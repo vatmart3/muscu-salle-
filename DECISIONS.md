@@ -2,6 +2,16 @@
 
 Un arbitrage, une ligne, une date. Le plus récent en haut.
 
+## 2026-09-14 — Lot 7 et accueil public
+
+- **2026-09-14** — La **semaine courante ne casse pas la série** tant qu'elle n'est pas finie : elle ne l'allonge que si l'objectif y est déjà atteint. Sans cette règle, tout le monde perdait sa série tous les lundis matin.
+- **2026-09-14** — Les semaines sans séance n'apparaissent pas dans l'agrégat SQL : `semainesCompletes` les rétablit avant tout calcul de série. Leur absence faisait croire à une continuité qui n'existait pas. Testé.
+- **2026-09-14** — Le tableau de bord n'a **qu'un seul héros** : l'anneau de la semaine. Les autres informations sont des lignes de texte, sans carte ni ombre.
+- **2026-09-14** — La prochaine séance proposée est celle qui **suit la dernière faite dans l'ordre du programme** : un Push Pull Legs tourne, il ne repropose pas éternellement la première séance.
+- **2026-09-14** — L'historique se déplie **sur place** : on ne quitte jamais la page pour lire le détail d'une série. Filtres par groupe musculaire et recherche sur le nom de séance ou d'exercice.
+- **2026-09-14** — La scène 3D d'accueil est coupée si le mouvement réduit est demandé, si l'appareil est modeste (≤ 2 cœurs, ≤ 2 Go), si le mode économie de données est actif, **ou si WebGL n'est pas disponible** — un canevas sans WebGL est un rectangle vide. Le repli est la même image en SVG, sans une ligne de JavaScript.
+- **2026-09-14** — Seuils d'appareil relâchés de « ≤ 4 cœurs » à « ≤ 2 cœurs » : beaucoup de téléphones milieu de gamme parfaitement capables déclarent 4 cœurs.
+
 ## 2026-09-14 — Lots 5 et 6 : séance en direct et bilan
 
 - **2026-09-14** — **Les identifiants viennent du client** (`crypto.randomUUID`) pour les séries et les exercices de séance. C'est ce qui rend la synchronisation idempotente : renvoyer deux fois le même instantané ne crée rien en double, et un envoi perdu est simplement remplacé par le suivant.

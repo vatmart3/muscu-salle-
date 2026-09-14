@@ -223,3 +223,45 @@ export function serieDeSemaines(
   }
   return compte;
 }
+
+/**
+ * Complète une série hebdomadaire avec les semaines sans séance.
+ * Indispensable au calcul de la série : une semaine à zéro n'apparaît pas dans
+ * l'agrégat SQL, et son absence ferait croire à une continuité qui n'existe pas.
+ */
+export function semainesCompletes(
+  lignes: ReadonlyArray<{ semaine: string; seances: number; tonnage: number }>,
+  nombre: number,
+  aujourdhui = new Date(),
+): Array<{ debut: string; seances: number; tonnage: number }> {
+  const connues = new Map(lignes.map((l) => [l.semaine.slice(0, 10), l]));
+  const lundi = new Date(aujourdhui);
+  lundi.setHours(0, 0, 0, 0);
+  lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+
+  const sortie: Array<{ debut: string; seances: number; tonnage: number }> = [];
+  for (let i = 0; i < nombre; i += 1) {
+    const debut = new Date(lundi);
+    debut.setDate(debut.getDate() - i * 7);
+    const cle = `${debut.getFullYear()}-${String(debut.getMonth() + 1).padStart(2, "0")}-${String(debut.getDate()).padStart(2, "0")}`;
+    const trouvee = connues.get(cle);
+    sortie.push({ debut: cle, seances: trouvee?.seances ?? 0, tonnage: trouvee?.tonnage ?? 0 });
+  }
+  return sortie;
+}
+
+/**
+ * Série de semaines en cours. La semaine courante n'est pas encore jouée :
+ * elle ne casse pas la série tant qu'elle n'est pas finie, mais elle ne
+ * l'allonge que si l'objectif y est déjà atteint.
+ */
+export function serieEnCours(
+  semaines: ReadonlyArray<{ debut: string; seances: number }>,
+  objectifHebdo: number,
+): number {
+  if (objectifHebdo <= 0 || semaines.length === 0) return 0;
+  const tries = [...semaines].sort((a, b) => b.debut.localeCompare(a.debut));
+  const courante = tries[0]!;
+  const reste = courante.seances >= objectifHebdo ? tries : tries.slice(1);
+  return serieDeSemaines(reste.map((s) => ({ debut: s.debut, seances: s.seances })), objectifHebdo);
+}
